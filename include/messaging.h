@@ -21,7 +21,12 @@
 #ifndef _MESSAGING_H
 #define _MESSAGING_H
 
+#include <time.h>
+
+#define SNDRCV_MQ "/send_receive_mq"
 #define MAX_MESSAGE_LENGTH 1000
+#define ERROR (-1)
+#define OK (0)
 
 /*Enumerating the threads*/
 typedef enum task_id_t{
@@ -35,7 +40,8 @@ typedef enum task_id_t{
 
 /*Struct of the message to be sent or received*/
 typedef struct message_t{
-    task_id task;
+    task_id source_task;
+    struct timeval t;   //for timestamps
     uint32_t length;
     uint32_t data[MAX_MESSAGE_LENGTH];
     uint32_t checksum;
