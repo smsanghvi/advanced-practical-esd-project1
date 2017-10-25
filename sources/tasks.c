@@ -31,19 +31,50 @@
 
 pthread_t temperature_thread;
 pthread_t light_thread;
+pthread_t logger_thread;
 
+static volatile uint32_t counter1 = 0;
+static volatile uint32_t counter2 = 1000;
+static volatile uint32_t counter3 = 0;
 static struct mq_attr mq_attr_log;
 static mqd_t mqd_log;
 
 
-void *temp_thread_fn(void *args){
+void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
-	pthread_exit(NULL);
+	while(1){
+		if(mq_send(mqd_log, (const char *)&counter1, sizeof(counter1), 1)){
+			printf("Temperature thread could not send data.\n");
+		}
+		printf("Sent %d\n", counter1++);
+		usleep(10);
+	}
+	//pthread_exit(NULL);
 }
 
-void *light_thread_fn(void *args){
+void *light_thread_fn(void *threadid){
 	printf("In light thread function.\n");
-	pthread_exit(NULL);
+	while(1){
+		if(mq_send(mqd_log, (const char *)&counter2, sizeof(counter2), 1)){
+			printf("Light thread could not send data.\n");
+		}	
+		printf("Sent %d\n", counter2++);
+		usleep(10);
+	}
+	//pthread_exit(NULL);
+}
+
+
+void *logger_thread_fn(void *threadid){
+	printf("In logger thread function.\n");
+	while(1){
+		if(!mq_receive(mqd_log, (const char *)&counter3, sizeof(counter3), NULL)){
+			printf("Logger thread could not receive data.\n");
+		}	
+		printf("Received message is %d\n", counter3);
+		usleep(1000);
+	}
+	//pthread_exit(NULL);
 }
 
 
@@ -56,12 +87,24 @@ int main(){
 
 	//initializing message queue attributes
 	mq_attr_log.mq_maxmsg = 100;
-	mq_attr_log.mq_msgsize = length_msg_struct;
+	mq_attr_log.mq_msgsize = sizeof(uint32_t);
+	mq_attr_log.mq_flags = 0;
 
 	mqd_log = mq_open(MSG_QUEUE_LOG, \
-						O_CREAT | O_RDWR | O_NONBLOCK, \
+						O_CREAT|O_RDWR, \
 						0666, \
-						&mq_attr_log);
+						NULL);
+
+	if(mqd_log < 0)
+  	{
+    	perror("sender mq_open");
+    	exit(1);
+  	}
+  	else
+  	{
+  		printf("message queue value is %d\n", mqd_log);
+    	printf("Log message queue created.\n");
+  	}
 
 	pthread_attr_init(&attr);
 
@@ -80,9 +123,17 @@ int main(){
  	printf("Light thread spawned.\n");
 	
 
-	//join temperature and light threads
+	//spawn logger thread
+	if(pthread_create(&logger_thread, &attr, (void*)&logger_thread_fn, NULL)){
+        printf("Failed to create light thread.\n");
+	}
+ 
+ 	printf("Logger thread spawned.\n");
+
+	//join temperature, logger and light threads
  	pthread_join(temperature_thread, NULL);
  	pthread_join(light_thread, NULL);
+ 	pthread_join(logger_thread, NULL);
 
 	return 0;
 }
