@@ -1,5 +1,5 @@
-SOURCE = main.c i2c.c messaging.c tasks.c
-HEADER = i2c.h messaging.h tasks.h
+SOURCE = tasks.c
+HEADER = i2c.h messaging.h
 
-VPATH = SRC
-HDRPATH = HDR
+VPATH = sources
+HDRPATH = include
