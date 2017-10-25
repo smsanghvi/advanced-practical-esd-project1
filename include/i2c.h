@@ -1,24 +1,24 @@
-
-/**************************************************************************************************
-*   File: messaging.h
-*	
-* 	The MIT License
+/******************************************************
+*   File: i2c.h
 *
-​* ​ ​ Copyright​ ​ (C)​ ​ 2017​ ​ by​ ​ Snehal Sanghvi & Rishi Soni 
-​*
-​* ​ ​ Redistribution,​ ​ modification​ ​ or​ ​ use​ ​ of​ ​ this​ ​ software​ ​ in​ ​ source​ ​ or​ ​ binary
+​* ​ ​ The MIT License (MIT)
+*	Copyright (C) 2017 by Snehal Sanghvi and Rishi Soni
+*   Redistribution,​ ​ modification​ ​ or​ ​ use​ ​ of​ ​ this​ ​ software​ ​ in​ ​ source​ ​ or​ ​ binary
 ​* ​ ​ forms​ ​ is​ ​ permitted​ ​ as​ ​ long​ ​ as​ ​ the​ ​ files​ ​ maintain​ ​ this​ ​ copyright.​ ​ Users​ ​ are
 ​* ​ ​ permitted​ ​ to​ ​ modify​ ​ this​ ​ and​ ​ use​ ​ it​ ​ to​ ​ learn​ ​ about​ ​ the​ ​ field​ ​ of​ ​ embedded
-​* ​ ​ software.​ ​ Snehal Sanghvi​ ​ and​ ​ Rishi Soni​ ​ are​ ​ not​ ​ liable​ ​ for
+​* ​ ​ software.​ ​ The authors​ and​ ​ the​ ​ University​ ​ of​ ​ Colorado​ ​ are​ ​ not​ ​ liable​ ​ for
 ​* ​ ​ any​ ​ misuse​ ​ of​ ​ this​ ​ material.
 *
 *
 *   Authors: Snehal Sanghvi and Rishi Soni
-*   Date Edited: 9 Nov 2016
+*   Date Edited: 24 Oct 2017
 *
-*   Description: I2C firmware wrapper for BeagleBone Green Linux distribution
+*   Description: Header file for I2C firmware wrapper functions
 *
-**************************************************************************************************/
+*
+********************************************************/
+#ifndef _I2C_H
+#define _I2C_H
 
 
 // I2C1 INIT
@@ -37,7 +37,7 @@ uint8_t i2c1_send_rs_recv(uint8_t i2c_addr, uint8_t *wbuf, uint64_t send_count, 
 // I2C1 PING
 uint8_t ping_i2c1(uint8_t i2c_addr);
 
-
+#endif
 
 
 
