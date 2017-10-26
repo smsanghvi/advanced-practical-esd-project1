@@ -38,7 +38,7 @@ pthread_t logger_thread;
 static volatile uint32_t counter1 = 0;
 static volatile uint32_t counter2 = 1000;
 static volatile uint32_t counter3 = 0;
-static struct mq_attr mq_attr_log;
+static struct mq_attr mq_attr_log, *attrp;
 static mqd_t mqd_log;
 sem_t temp_sem, light_sem;
 
@@ -92,7 +92,7 @@ void *logger_thread_fn(void *threadid){
 						O_RDONLY, \
 						0666, \
 						NULL);
-		if(!mq_receive(mqd_log, (const char *)&counter3, sizeof(counter3), NULL)){
+		if(!mq_receive(mqd_log, (char *)&counter3, sizeof(counter3), NULL)){
 			printf("Logger thread could not receive data.\n");
 		}	
 		printf("Received message is %d\n", counter3);
@@ -111,17 +111,17 @@ int main(){
 	length_msg_struct = sizeof(msg);
 	sem_init (& temp_sem , 0 , 1 );
 	sem_init (& light_sem , 0 , 0 );
-
+	attrp = NULL;
 
 	//initializing message queue attributes
-	mq_attr_log.mq_maxmsg = 100;
+	mq_attr_log.mq_maxmsg = 50;						// msg_max of Linux system
 	mq_attr_log.mq_msgsize = sizeof(uint32_t);
-	mq_attr_log.mq_flags = 0;
+	mq_attr_log.mq_flags = O_NONBLOCK;
 
-	mqd_log = mq_open(MSG_QUEUE_LOG, \
-						O_CREAT|O_RDWR, \
-						0666, \
-						NULL);
+	attrp = &mq_attr_log;
+	mq_unlink(MSG_QUEUE_LOG);
+
+	mqd_log = mq_open(MSG_QUEUE_LOG, O_RDWR|O_CREAT, 0666, attrp);
 
 	if(mqd_log < 0)
   	{
