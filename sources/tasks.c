@@ -28,6 +28,7 @@
 #include <mqueue.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <string.h>
 
 #define MSG_QUEUE_LOG "/my_queue_log"
 
@@ -38,16 +39,22 @@ pthread_mutex_t mutex_log;
 
 static volatile int count = 0;
 
-static volatile uint32_t counter1 = 0;
-static volatile uint32_t counter2 = 1000;
-static volatile uint32_t counter3 = 0;
+static uint32_t counter1 = 0;
+static uint32_t counter2 = 1000;
+
 struct mq_attr mq_attr_log;
 static mqd_t mqd_log;
 sem_t temp_sem, light_sem;
 
+message msg1;
+message msg2;
+message msg3;
+
 
 void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
+	task_id id =  temp_thread;
+	message_type type = LOG_MESSAGE;
 
 	while(1){
 		//sem_wait(&temp_sem);
@@ -55,8 +62,13 @@ void *temp_thread_fn(void *threadid){
 						O_WRONLY, \
 						0666, \
 						&mq_attr_log);*/
+		msg1.source_task = id;
+		msg1.type = type;
+		msg1.data = &counter1;
+
 		if(!pthread_mutex_lock(&mutex_log)){
-			if(count<10 && mq_send(mqd_log, (const char *)&counter1, sizeof(counter1), 1)){
+
+			if(count<10 && mq_send(mqd_log, (const char *)&msg1, sizeof(msg1), 1)){
 				printf("Temperature thread could not send data.\n");
 			}
 			else if(count<10){
@@ -64,8 +76,8 @@ void *temp_thread_fn(void *threadid){
 				//printf("Count is %d\n", count);
 				count++;
 			}
-			pthread_mutex_unlock(&mutex_log);
 		}
+		pthread_mutex_unlock(&mutex_log);
 		//mq_close(mqd_log);
 		//sem_post(&light_sem);
 		usleep(1500);
@@ -75,14 +87,21 @@ void *temp_thread_fn(void *threadid){
 
 void *light_thread_fn(void *threadid){
 	printf("In light thread function.\n");
+	task_id id =  lght_thread;
+	message_type type = LOG_MESSAGE;
 	while(1){
 		//sem_wait(&light_sem);
 		/*mqd_log = mq_open(MSG_QUEUE_LOG, \
 						O_WRONLY, \
 						0666, \
 						&mq_attr_log);*/
+		//printf("Thread id of light thread is %ld\n", pthread_self());
+		msg2.source_task = id;
+		msg2.type = type;
+		msg2.data = &counter2;
+
 		if(!pthread_mutex_lock(&mutex_log)){
-			if(mq_send(mqd_log, (const char *)&counter2, sizeof(counter2), 1)){
+			if(mq_send(mqd_log, (const char *)&msg2, sizeof(msg2), 1)){
 				printf("Light thread could not send data.\n");
 			}
 			else if(count<10){
@@ -90,8 +109,8 @@ void *light_thread_fn(void *threadid){
 				//printf("Count is %d\n", count);
 				count++;
 			}	
-			pthread_mutex_unlock(&mutex_log);
 		}
+		pthread_mutex_unlock(&mutex_log);
 		//mq_close(mqd_log);
 		//sem_post(&temp_sem);
 		usleep(1500);
@@ -102,16 +121,27 @@ void *light_thread_fn(void *threadid){
 
 void *logger_thread_fn(void *threadid){
 	printf("In logger thread function.\n");
+	task_id id;
 	while(1){
 		/*mqd_log = mq_open(MSG_QUEUE_LOG, \
 						O_RDONLY, \
 						0666, \
 						NULL);*/
-		if(!mq_receive(mqd_log, (char *)&counter3, sizeof(counter3), NULL)){
+		if(!mq_receive(mqd_log, (char *)&msg3, sizeof(msg3), NULL)){
 			printf("Logger thread could not receive data.\n");
 		}	
 		else if(count>0 && count<11){
-			printf("Received %d\n", counter3);
+			if(msg3.source_task == (id = temp_thread)){
+				printf("Received %d from temp thread.\n", *(uint32_t *)msg3.data);
+			}
+			
+			if(msg3.source_task == (id = lght_thread)){
+				printf("Received %d from light thread.\n", *(uint32_t *)msg3.data);
+			}
+
+			if(msg3.source_task == (id = main_thread)){
+				printf("Received %d from main thread.\n", *(char *)msg3.data);				
+			}
 
 			count--;
 		}
@@ -140,7 +170,7 @@ int main(){
 
 	//initializing message queue attributes
 	mq_attr_log.mq_maxmsg = 10;
-	mq_attr_log.mq_msgsize = sizeof(uint32_t);
+	mq_attr_log.mq_msgsize = sizeof(message);
 	mq_attr_log.mq_flags = 0;
 
 	mq_unlink(MSG_QUEUE_LOG);
@@ -165,19 +195,53 @@ int main(){
 	
 	//exit(0);
 
+	task_id id =  main_thread;
+	message_type type = SYSTEM_INIT_MESSAGE;
+	msg3.source_task = id;
+	msg3.type = type;
+
 	//spawn temperature thread
 	if(pthread_create(&temperature_thread, &attr, (void*)&temp_thread_fn, NULL)){
         printf("Failed to create temperature thread.\n");
 	}
  
- 	printf("Temperature thread spawned.\n");
+	msg3.data = "Temperature thread is spawned.";
+
+ 	if(!pthread_mutex_lock(&mutex_log)){
+		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
+			printf("Main thread could not send data.\n");
+		}
+		else if(count<10){
+			printf("Sent %s\n", (char *)msg3.data);
+			//printf("Count is %d\n", count);
+			count++;
+		}	
+	}
+	pthread_mutex_unlock(&mutex_log);
+ 	
+ 	//printf("Temperature thread spawned.\n");
+
 
 	//spawn light thread
 	if(pthread_create(&light_thread, &attr, (void*)&light_thread_fn, NULL)){
         printf("Failed to create light thread.\n");
 	}
  
- 	printf("Light thread spawned.\n");
+	msg3.data = "Light thread spawned.";
+
+	if(!pthread_mutex_lock(&mutex_log)){
+		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
+			printf("Main thread could not send data.\n");
+		}
+		else if(count<10){
+			printf("Sent %s\n", (char *)msg3.data);
+			//printf("Count is %d\n", count);
+			count++;
+		}	
+	}
+	pthread_mutex_unlock(&mutex_log);
+
+ 	//printf("Light thread spawned.\n");
 	
 	//spawn logger thread
 	if(pthread_create(&logger_thread, &attr, (void*)&logger_thread_fn, NULL)){

@@ -42,7 +42,8 @@ typedef enum task_id_t{
 typedef enum message_type_t{
     HEARTBEAT_MESSAGE,
     SYSTEM_FAILURE_MESSAGE,
-    LOG_MESSAGE
+    LOG_MESSAGE,
+    SYSTEM_INIT_MESSAGE
 }message_type;
 
 
@@ -52,7 +53,7 @@ typedef struct message_t{
     message_type type;
     struct timeval *t;   //for timestamps
     uint32_t length;
-    uint32_t data[MAX_MESSAGE_LENGTH];
+    void *data;
     uint32_t checksum;
 }message;
 
