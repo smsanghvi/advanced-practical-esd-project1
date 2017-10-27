@@ -140,7 +140,7 @@ void *logger_thread_fn(void *threadid){
 			}
 
 			if(msg3.source_task == (id = main_thread)){
-				printf("Received %d from main thread.\n", *(char *)msg3.data);				
+				printf("Received %s from main thread.\n", (char *)msg3.data);				
 			}
 
 			count--;
