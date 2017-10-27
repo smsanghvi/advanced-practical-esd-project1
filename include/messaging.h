@@ -51,8 +51,7 @@ typedef enum message_type_t{
 typedef struct message_t{
     task_id source_task;
     message_type type;
-    struct timeval *t;   //for timestamps
-    uint32_t length;
+    struct timeval t;   //for timestamps
     void *data;
     uint32_t checksum;
 }message;

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
-#include <fcntl.h>            /* Defines O_* constants */
+#include <fcntl.h>
 #include <sys/stat.h> 
 #include "messaging.h"
 #include <mqueue.h>
@@ -30,6 +30,7 @@
 #include <semaphore.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #define MSG_QUEUE_LOG "/my_queue_log"
 
@@ -37,6 +38,8 @@ pthread_t temperature_thread;
 pthread_t light_thread;
 pthread_t logger_thread;
 pthread_mutex_t mutex_log;
+
+struct timeval tv;
 
 char buf[10000];
 struct sigaction sig;
@@ -75,6 +78,9 @@ void *temp_thread_fn(void *threadid){
 		msg1.source_task = id;
 		msg1.type = type;
 		msg1.data = &counter1;
+		gettimeofday(&msg1.t, NULL);
+		//printf("timestamp in secs is %ld\n", msg1.t.tv_sec);
+		//printf("timestamp in usecs is %ld\n", msg1.t.tv_usec);
 
 		if(!pthread_mutex_lock(&mutex_log)){
 
@@ -99,6 +105,7 @@ void *light_thread_fn(void *threadid){
 		msg2.source_task = id;
 		msg2.type = type;
 		msg2.data = &counter2;
+		gettimeofday(&msg2.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_log)){
 			if(mq_send(mqd_log, (const char *)&msg2, sizeof(msg2), 1)){
@@ -126,19 +133,22 @@ void *logger_thread_fn(void *threadid){
 		}	
 		else if(count>0 && count<11){
 			if(msg3.source_task == (id = temp_thread)){
-				sprintf(buf, "Source: Temperature thread; Data: %d\n", *(uint32_t *)msg3.data);
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Temperature thread; Data: %d\n", \
+					msg3.t.tv_sec, msg3.t.tv_usec, *(uint32_t *)msg3.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, 10000);
 			}
 			
 			if(msg3.source_task == (id = lght_thread)){
-				sprintf(buf, "Source: Light thread; Data: %d\n", *(uint32_t *)msg3.data);
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %d\n", \
+					msg3.t.tv_sec, msg3.t.tv_usec, *(uint32_t *)msg3.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, 10000);
 			}
 
 			if(msg3.source_task == (id = main_thread)){			
-				sprintf(buf, "Source: Main thread; Data: %s\n", (char *)msg3.data);
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Main thread; Data: %s\n", \
+					msg3.t.tv_sec, msg3.t.tv_usec, (char *)msg3.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, 10000);
 			}
@@ -192,6 +202,7 @@ int main(){
 	message_type type = SYSTEM_INIT_MESSAGE;
 	msg3.source_task = id;
 	msg3.type = type;
+	gettimeofday(&msg3.t, NULL);
 
 	//spawn temperature thread
 	if(pthread_create(&temperature_thread, &attr, (void*)&temp_thread_fn, NULL)){
@@ -217,6 +228,7 @@ int main(){
 	}
  
 	msg3.data = "Light thread spawned.";
+	gettimeofday(&msg3.t, NULL);
 
 	if(!pthread_mutex_lock(&mutex_log)){
 		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
