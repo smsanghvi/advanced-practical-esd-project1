@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 #include <string.h>
+#include <signal.h>
 
 #define MSG_QUEUE_LOG "/my_queue_log"
 
@@ -50,7 +51,15 @@ message msg1;
 message msg2;
 message msg3;
 
-
+void signal_handler(int signum)
+{
+	if (signum == SIGINT)
+	{
+		printf("\nClosing mqueue\n");
+		mq_close(mqd_log);
+		exit(0);
+	}
+}
 void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
 	task_id id =  temp_thread;
@@ -190,7 +199,7 @@ int main(){
   		printf("message queue value is %d\n", mqd_log);
     	printf("Log message queue created.\n");
   	}
-
+  	signal(SIGINT, signal_handler);
 	pthread_attr_init(&attr);
 	
 	//exit(0);
