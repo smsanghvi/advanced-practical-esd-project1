@@ -62,7 +62,7 @@ void signal_handler(int signum)
 	if (signum == SIGINT)
 	{
 		printf("\nClosing mqueue and file...\n");
-		mq_close(mqd_log);
+		mq_close(mqd_temp);
 		fclose(fp);
 		exit(0);
 	}
@@ -84,7 +84,7 @@ void *temp_thread_fn(void *threadid){
 
 		if(!pthread_mutex_lock(&mutex_log)){
 
-			if(count<10 && mq_send(mqd_log, (const char *)&msg1, sizeof(msg1), 1)){
+			if(count<10 && mq_send(mqd_temp, (const char *)&msg1, sizeof(msg1), 1)){
 				printf("Temperature thread could not send data.\n");
 			}
 			else if(count<10){
@@ -108,7 +108,7 @@ void *light_thread_fn(void *threadid){
 		gettimeofday(&msg2.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_log)){
-			if(mq_send(mqd_log, (const char *)&msg2, sizeof(msg2), 1)){
+			if(mq_send(mqd_light, (const char *)&msg2, sizeof(msg2), 1)){
 				printf("Light thread could not send data.\n");
 			}
 			else if(count<10){
@@ -128,7 +128,7 @@ void *logger_thread_fn(void *threadid){
 	fp = fopen("log.txt", "a+");
 
 	while(1){
-		if(!mq_receive(mqd_log, (char *)&msg3, sizeof(msg3), NULL)){
+		if(!mq_receive(mqd_temp, (char *)&msg3, sizeof(msg3), NULL)){
 			printf("Logger thread could not receive data.\n");
 		}	
 		else if(count>0 && count<11){
@@ -203,25 +203,25 @@ int main(){
 						0666, \
 						&mq_attr_log);
 
-	if(mqd_log < 0)
-  	{
-    	perror("sender mq_open");
-    	exit(1);
-  	}
-  	else
-  	{
-  		printf("message queue value is %d\n", mqd_log);
-    	printf("Log message queue created.\n");
-  	}
+	// if(mqd_log < 0)
+ //  	{
+ //    	perror("sender mq_open");
+ //    	exit(1);
+ //  	}
+ //  	else
+ //  	{
+ //  		printf("message queue value is %d\n", mqd_log);
+ //    	printf("Log message queue created.\n");
+ //  	}
 
   	signal(SIGINT, signal_handler);
 	
 	pthread_attr_init(&attr);
 
-	task_id id =  main_thread;
-	message_type type = SYSTEM_INIT_MESSAGE;
-	msg3.source_task = id;
-	msg3.type = type;
+	// task_id id =  main_thread;
+	// message_type type = SYSTEM_INIT_MESSAGE;
+	msg3.source_task = main_thread;
+	msg3.type = SYSTEM_INIT_MESSAGE;
 	gettimeofday(&msg3.t, NULL);
 
 	//spawn temperature thread
@@ -232,7 +232,7 @@ int main(){
 	msg3.data = "Temperature thread is spawned.";
 
  	if(!pthread_mutex_lock(&mutex_log)){
-		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
+		if(mq_send(mqd_temp, (const char *)&msg3, sizeof(msg3), 1)){
 			printf("Main thread could not send data.\n");
 		}
 		else if(count<10){
@@ -251,7 +251,7 @@ int main(){
 	gettimeofday(&msg3.t, NULL);
 
 	if(!pthread_mutex_lock(&mutex_log)){
-		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
+		if(mq_send(mqd_light, (const char *)&msg3, sizeof(msg3), 1)){
 			printf("Main thread could not send data.\n");
 		}
 		else if(count<10){
@@ -270,7 +270,7 @@ int main(){
 
 
 	if(!pthread_mutex_lock(&mutex_log)){
-		if(mq_send(mqd_log, (const char *)&msg3, sizeof(msg3), 1)){
+		if(mq_send(mqd_light, (const char *)&msg3, sizeof(msg3), 1)){
 			printf("Main thread could not send data.\n");
 		}
 		else if(count<10){
