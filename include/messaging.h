@@ -23,7 +23,10 @@
 
 #include <time.h>
 
-#define SNDRCV_MQ "/send_receive_mq"
+#define MSG_QUEUE_RESPONSE "/log_queue_response"
+#define MSG_QUEUE_RESPONSE_COPY "/log_queue_response_copy"
+#define MSG_QUEUE_REQUEST "/queue_request"
+
 #define MAX_MESSAGE_LENGTH 1000
 #define ERROR (-1)
 #define OK (0)
@@ -43,27 +46,28 @@ typedef enum message_type_t{
     HEARTBEAT_MESSAGE,
     SYSTEM_FAILURE_MESSAGE,
     LOG_MESSAGE,
-    SYSTEM_INIT_MESSAGE
+    SYSTEM_INIT_MESSAGE,
+    REQUEST_MESSAGE
 }message_type;
-
-
-/*Struct of the message to be sent or received*/
-typedef struct message_t{
-    task_id source_task;
-    message_type type;
-    struct timeval t;   //for timestamps
-    void *data;
-    uint32_t checksum;
-}message;
 
 
 /*Enumerating different logging levels*/
 typedef enum log_level_t{
-	LOG_CRITICAL_FAILURE,
-	LOG_SYSTEM_FAILURE,
-	LOG_MODULE_STARTUP,
-	LOG_INFO_DATA
-}log_level;
+    LOG_CRITICAL_FAILURE,
+    LOG_SYSTEM_FAILURE,
+    LOG_MODULE_STARTUP,
+    LOG_INFO_DATA
+}log_l;
+
+
+/*Struct of the message to be sent or received*/
+typedef struct message_t{
+    log_l log_level;
+    task_id source_task;
+    message_type type;
+    struct timeval t;   //for timestamps
+    void *data;
+}message;
 
 
 /*Enumerating the errors for checksum*/
