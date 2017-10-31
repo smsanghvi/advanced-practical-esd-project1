@@ -73,6 +73,10 @@ void signal_handler(int signum)
 	{
 		printf("\nClosing mqueue and file...\n");
 		mq_close(mqd_temp);
+		mq_close(mqd_light);
+		mq_close(mqd_temp_cp);
+		mq_close(mqd_light_cp);
+		mq_close(mqd_req);
 		fclose(fp);
 		exit(0);
 	}
@@ -94,6 +98,7 @@ void *temp_thread_fn(void *threadid){
 		msg_temp.source_task = id;
 		msg_temp.type = LOG_MESSAGE;
 		msg_temp.data = &counter1;
+		msg_temp.request_type = NOT_REQUEST;
 		gettimeofday(&msg_temp.t, NULL);
 
 		counter1_copy = counter1;
@@ -117,6 +122,7 @@ void *temp_thread_fn(void *threadid){
 		msg_temp_cp.source_task = id;
 		msg_temp_cp.type = LOG_MESSAGE;
 		msg_temp_cp.data = &counter1_copy;
+		msg_temp.request_type = NOT_REQUEST;
 		gettimeofday(&msg_temp_cp.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_temp_main)){
@@ -128,7 +134,11 @@ void *temp_thread_fn(void *threadid){
 				printf("Sent %d\n", counter1_copy);
 			}
 		}
-		pthread_mutex_unlock(&mutex_temp_main);		
+		pthread_mutex_unlock(&mutex_temp_main);	
+
+		/*
+			Read/write for request messages from light thread
+		*/	
 
 		usleep(1500);
 	}
@@ -152,6 +162,7 @@ void *light_thread_fn(void *threadid){
 		msg_light.type = LOG_MESSAGE;
 		msg_light.data = &counter2;
 		gettimeofday(&msg_light.t, NULL);
+		msg_light.request_type = NOT_REQUEST;
 
 		counter2_copy = counter2;
 
@@ -174,6 +185,7 @@ void *light_thread_fn(void *threadid){
 		msg_light_cp.type = LOG_MESSAGE;
 		msg_light_cp.data = &counter2_copy;
 		gettimeofday(&msg_light_cp.t, NULL);
+		msg_light.request_type = NOT_REQUEST;
 
 		if(!pthread_mutex_lock(&mutex_light_main)){
 
@@ -184,7 +196,13 @@ void *light_thread_fn(void *threadid){
 				printf("Sent %d\n", counter2_copy);
 			}
 		}
-		pthread_mutex_unlock(&mutex_light_main);		
+		pthread_mutex_unlock(&mutex_light_main);
+
+		/*
+			Read/write for request messages from temperature thread
+		*/
+
+
 
 		usleep(1500);
 	}
@@ -226,11 +244,20 @@ void *logger_thread_fn(void *threadid){
 			printf("Logger thread could not receive data from light thread.\n");
 		}	
 		else if(count_light>0 && count_light<11){
-			sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %d\n", \
-			msg_t.t.tv_sec, msg_t.t.tv_usec, *(uint32_t *)msg_t.data);
-			fwrite(buf, sizeof(char), strlen(buf), fp);
-			memset(buf, 0, LOG_BUFFER_SIZE);	
-			count_light--;		
+			if(msg_t.type == (LOG_MESSAGE)){
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %d\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, *(uint32_t *)msg_t.data);
+				fwrite(buf, sizeof(char), strlen(buf), fp);
+				memset(buf, 0, LOG_BUFFER_SIZE);
+				count_light--;
+			}
+			else if(msg_t.type == (SYSTEM_INIT_MESSAGE)){
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %s\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, (char *)msg_t.data);
+				fwrite(buf, sizeof(char), strlen(buf), fp);
+				memset(buf, 0, LOG_BUFFER_SIZE);
+				count_light--;
+			}		
 		}
 		
 		usleep(500);
@@ -323,6 +350,7 @@ int main(){
 	// message_type type = SYSTEM_INIT_MESSAGE;
 	msg3.source_task = main_thread;
 	msg3.type = SYSTEM_INIT_MESSAGE;
+	msg3.request_type = NOT_REQUEST;
 	gettimeofday(&msg3.t, NULL);
 
 	//spawn temperature thread
@@ -348,6 +376,7 @@ int main(){
         printf("Failed to create light thread.\n");
 	}
  
+ 	msg3.request_type = NOT_REQUEST;
 	msg3.data = "Light thread spawned.";
 	gettimeofday(&msg3.t, NULL);
 
@@ -367,6 +396,7 @@ int main(){
         printf("Failed to create light thread.\n");
 	}
  
+ 	msg3.request_type = NOT_REQUEST;
  	msg3.data = "Logger thread spawned.";
 	gettimeofday(&msg3.t, NULL);
 
