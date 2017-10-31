@@ -52,7 +52,7 @@ static uint32_t counter1 = 0;
 static uint32_t counter2 = 1000;
 
 struct mq_attr mq_attr_log;
-static mqd_t mqd_log;
+static mqd_t mqd_temp, mqd_temp_cp, mqd_light, mqd_light_cp, mqd_req;
 sem_t temp_sem, light_sem;
 
 message msg1, msg2, msg3;
@@ -178,7 +178,27 @@ int main(){
 
 	mq_unlink(MSG_QUEUE_LOG);
 
-	mqd_log = mq_open(MSG_QUEUE_LOG, \
+	mqd_temp = mq_open(TEMP_MSG_QUEUE_RESPONSE, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
+
+	mqd_temp_cp = mq_open(TEMP_MSG_QUEUE_RESPONSE_COPY, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
+
+	mqd_light = mq_open(LIGHT_MSG_QUEUE_RESPONSE, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
+
+	mqd_light_cp = mq_open(LIGHT_MSG_QUEUE_RESPONSE_COPY, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
+
+	mqd_req = mq_open(MSG_QUEUE_REQUEST, \
 						O_CREAT|O_RDWR|O_NONBLOCK, \
 						0666, \
 						&mq_attr_log);
