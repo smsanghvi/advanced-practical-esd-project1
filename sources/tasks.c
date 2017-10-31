@@ -110,7 +110,7 @@ void *temp_thread_fn(void *threadid){
 				printf("Temperature thread could not send data to logger.\n");
 			}
 			else if(count_temp<10){
-				printf("Sent %d\n", counter1++);
+				printf("Sent temp original %d\n", counter1++);
 				count_temp++;
 			}
 		}
@@ -131,7 +131,7 @@ void *temp_thread_fn(void *threadid){
 				printf("Temperature thread could not send data to main.\n");
 			}
 			else{
-				printf("Sent %d\n", counter1_copy);
+				printf("Sent temp copy %d\n", counter1_copy);
 			}
 		}
 		pthread_mutex_unlock(&mutex_temp_main);	
@@ -171,7 +171,7 @@ void *light_thread_fn(void *threadid){
 				printf("Light thread could not send data to logger.\n");
 			}
 			else if(count_light<10){
-				printf("Sent %d\n", counter2++);
+				printf("Sent light original %d\n", counter2++);
 				count_light++;
 			}	
 		}
@@ -189,11 +189,11 @@ void *light_thread_fn(void *threadid){
 
 		if(!pthread_mutex_lock(&mutex_light_main)){
 
-			if(mq_send(mqd_temp_cp, (const char *)&msg_light_cp, sizeof(msg_light_cp), 1)){
+			if(mq_send(mqd_light_cp, (const char *)&msg_light_cp, sizeof(msg_light_cp), 1)){
 				printf("Light thread could not send data to main.\n");
 			}
 			else{
-				printf("Sent %d\n", counter2_copy);
+				printf("Sent light copy %d\n", counter2_copy);
 			}
 		}
 		pthread_mutex_unlock(&mutex_light_main);
@@ -204,7 +204,7 @@ void *light_thread_fn(void *threadid){
 
 
 
-		usleep(1500);
+		usleep(2000);
 	}
 }
 
@@ -269,6 +269,7 @@ int main(){
 
 	pthread_attr_t attr;
 	static message msg3;
+	
 
    if(pthread_mutex_init(&mutex_log_temp, NULL)){
       printf("Error in initializing log temp mutex.\n");  
@@ -410,6 +411,47 @@ int main(){
 		}	
 	}
 	pthread_mutex_unlock(&mutex_log_temp);
+
+
+	//Rishi's commit 
+	static message msg_te;
+	static message msg_li;
+	// usleep(1000);
+	while(1)
+	{
+		// printf("Entered main while loop\n");
+		
+		if(!pthread_mutex_lock(&mutex_temp_main))
+		{	
+			//checking the temp queue
+			if(mq_receive(mqd_temp_cp, (char *)&msg_te, sizeof(msg_te), NULL) < 0)
+			{
+				// printf("Main thread could not receive data from temp thread.\n");
+			}	
+			else
+			{
+				printf("Main thread: Temperature data is %d\n", *(uint32_t *)msg_te.data);
+			}
+			pthread_mutex_unlock(&mutex_temp_main);
+		}
+		
+		if(!pthread_mutex_lock(&mutex_light_main))
+		{
+			//checking the light queue
+			if(mq_receive(mqd_light_cp, (char *)&msg_te, sizeof(msg_te), NULL) < 0)
+			{
+				// printf("Main thread could not receive data from light thread.\n");
+			}	
+			else
+			{
+				printf("Main thread: Light data is %d\n", *(uint32_t *)msg_te.data);
+			}
+			pthread_mutex_unlock(&mutex_light_main);
+		}
+
+		usleep(1000);
+	}
+	//End of Rishi's commit
 
 	//join temperature, logger and light threads
  	pthread_join(temperature_thread, NULL);
