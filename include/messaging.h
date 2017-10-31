@@ -23,8 +23,10 @@
 
 #include <time.h>
 
-#define MSG_QUEUE_RESPONSE "/log_queue_response"
-#define MSG_QUEUE_RESPONSE_COPY "/log_queue_response_copy"
+#define TEMP_MSG_QUEUE_RESPONSE "/temp_log_queue_response"
+#define TEMP_MSG_QUEUE_RESPONSE_COPY "/temp_log_queue_response_copy"
+#define LIGHT_MSG_QUEUE_RESPONSE "/light_log_queue_response"
+#define LIGHT_MSG_QUEUE_RESPONSE_COPY "/light_log_queue_response_copy"
 #define MSG_QUEUE_REQUEST "/queue_request"
 
 #define MAX_MESSAGE_LENGTH 1000
@@ -60,9 +62,18 @@ typedef enum log_level_t{
 }log_l;
 
 
+/*Enumerating whether the request message queue has a request
+receive or request send type*/
+typedef enum request_type_t{
+    REQUEST_SEND,
+    REQUEST_RECEIVE
+}request_t;
+
+
 /*Struct of the message to be sent or received*/
 typedef struct message_t{
     log_l log_level;
+    request_t request_type;     //only useful for the request queue
     task_id source_task;
     message_type type;
     struct timeval t;   //for timestamps
