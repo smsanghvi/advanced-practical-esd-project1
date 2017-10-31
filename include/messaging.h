@@ -66,7 +66,8 @@ typedef enum log_level_t{
 receive or request send type*/
 typedef enum request_type_t{
     REQUEST_SEND,
-    REQUEST_RECEIVE
+    REQUEST_RECEIVE,
+    NOT_REQUEST
 }request_t;
 
 
