@@ -49,7 +49,9 @@ typedef enum message_type_t{
     SYSTEM_FAILURE_MESSAGE,
     LOG_MESSAGE,
     SYSTEM_INIT_MESSAGE,
-    REQUEST_MESSAGE
+    REQUEST_MESSAGE,
+    RESPONSE_MESSAGE,
+    DUMMY_MESSAGE
 }message_type;
 
 
@@ -65,8 +67,8 @@ typedef enum log_level_t{
 /*Enumerating whether the request message queue has a request
 receive or request send type*/
 typedef enum request_type_t{
-    REQUEST_SEND,
-    REQUEST_RECEIVE,
+    TEMP_REQUEST,   //can only be sent by light thread
+    LIGHT_REQUEST,  //can only be sent by temp thread
     NOT_REQUEST
 }request_t;
 
