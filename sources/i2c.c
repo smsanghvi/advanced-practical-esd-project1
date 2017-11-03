@@ -13,7 +13,7 @@ uint8_t* i2c_rw(i2c_cmd cmd)
 {       
         uint8_t *received_data = NULL;
         uint8_t *buf = NULL;
-        uint8_t namebuf[PATH_LEN];
+        char namebuf[PATH_LEN];
         uint64_t fd;
         
         snprintf(namebuf, sizeof(namebuf), "/dev/i2c-%d", cmd.i2c_bus);
