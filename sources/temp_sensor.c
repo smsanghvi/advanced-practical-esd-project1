@@ -119,9 +119,9 @@ void temp_sensor_sd(uint8_t sd)
 	    if(sd == 1)
 	{
             mask_byte_MSB = ((bit_shift & 0xFF00) >> 8) | (0x01);
-            printf("MSB is %x\n", mask_byte_MSB);
+            //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF);
-            printf("LSB is %x\n", mask_byte_LSB);
+            //printf("LSB is %x\n", mask_byte_LSB);
 	}
 	    else if (sd == 0)
 	{

@@ -43,6 +43,10 @@ typedef enum task_id_t{
 }task_id;
 
 
+typedef enum{
+    CONFIG_REG_READ
+}temp_request_type;
+
 /*enumerating the message type */
 typedef enum message_type_t{
     HEARTBEAT_MESSAGE,
@@ -73,12 +77,21 @@ typedef enum request_type_t{
 }request_t;
 
 
+/*Enumerating the type of request sent between light and temperature threads*/
+typedef enum type_rqst{
+	TEMP_CONFIG_READ,
+	TEMP_CONFIG_WRITE,
+	TEMP_SHUTDOWN_ENABLE,
+	TEMP_SHUTDOWN_DISABLE
+}type_of_request;
+
 /*Struct of the message to be sent or received*/
 typedef struct message_t{
     log_l log_level;
     request_t request_type;     //only useful for the request queue
     task_id source_task;
     message_type type;
+    type_of_request msg_rqst_type;
     struct timeval t;   //for timestamps
     void *data;
 }message;
@@ -89,7 +102,6 @@ typedef enum ERR_t {
 	CHKSUM_FAIL = 1,
 	CHKSUM_PASS = 2
 }ERR;
-
 
 
 /* Function to decode the incoming message packet*/
