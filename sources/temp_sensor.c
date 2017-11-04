@@ -60,7 +60,7 @@ float temp_sensor_read(void)
 //	else if(em_bit == 0)	//12-bit mode
 //	{
 //	    printf("Value of em_bit is %d\n", em_bit);
-            bit_shift = ((returned_data[0] << 8) | returned_data[1] >> 4) ;
+            bit_shift = ((returned_data[0] << 8) | returned_data[1]) >> 4 ;
 //	    bit_shift >>= 3;
 //	}
 
