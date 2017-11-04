@@ -36,7 +36,7 @@ float light_sensor_read(void)
 {
         i2c_cmd cmd;
         uint16_t bit_shift;
-    uint16_t ch0, ch1;
+        uint16_t ch0, ch1;
         float tmp, lux;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
@@ -50,9 +50,9 @@ float light_sensor_read(void)
 
         //Power ON the light sensor first
         cmd.send_data[0] = 0x80;
-    cmd.send_data[1] = 0x03;
+        cmd.send_data[1] = 0x03;
         returned_data = (uint8_t *)i2c_rw(cmd);
-	 usleep(1000);
+	    usleep(1000);
 
     //Setting the integration time to 13.7ms (reduces ADC count value to min (=5047)
     cmd.send_data[0] = 0x81;
@@ -73,8 +73,8 @@ float light_sensor_read(void)
         cmd.send_data[1] = 0x8F;
         returned_data = (uint8_t*)i2c_rw(cmd);
         ch1 = returned_data[1] << 8 | returned_data[0];
-        printf("Value of ch0 is %x\n", ch0);
-    printf("Value of ch1 is %x\n", ch1);
+        //printf("Value of ch0 is %x\n", ch0);
+    //printf("Value of ch1 is %x\n", ch1);
 
     /*Calculating actual Lux values */
 

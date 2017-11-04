@@ -507,7 +507,7 @@ void *light_thread_fn(void *threadid){
 				printf("Light thread could not send data to logger.\n");
 			}
 			else if(count_light<10){
-				printf("Sent %f\n", lux_value);
+				//printf("Sent %f\n", lux_value);
 				count_light++;
 			}	
 		}
