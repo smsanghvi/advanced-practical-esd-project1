@@ -30,8 +30,8 @@ float temp_sensor_read(void)
 {
         i2c_cmd cmd;
         uint16_t bit_shift;
-	uint8_t em_bit;
-	float temp;
+	    //uint8_t em_bit;
+	    float temp;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x48;
         cmd.i2c_bus = 2;
@@ -75,14 +75,14 @@ void temp_sensor_config_regwrite(uint16_t data)
 {
 	i2c_cmd cmd;
 	uint8_t mask_byte_MSB = 0, mask_byte_LSB = 0;
-        uint32_t bit_shift;
-        uint8_t *returned_data = NULL;
+        //uint32_t bit_shift;
+        //uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x48;
         cmd.i2c_bus = 2;
         cmd.send_count = 3;
         cmd.recv_count = 2;
 
-        returned_data = (uint8_t *)malloc(cmd.recv_count);
+        //returned_data = (uint8_t *)malloc(cmd.recv_count);
         cmd.send_data = (uint8_t *)malloc(cmd.send_count);
 //	printf("Data to be written in config reg is %x\n", data);
 	mask_byte_MSB = (data & 0xFF00) >> 8;
@@ -92,8 +92,9 @@ void temp_sensor_config_regwrite(uint16_t data)
 
 	uint8_t temp_array[3] = {0x01, mask_byte_MSB, mask_byte_LSB};
         memcpy(cmd.send_data, temp_array, 3);
-        returned_data = (uint8_t *)i2c_rw(cmd);
-        bit_shift = ((returned_data[0] << 8) | returned_data[1]);
+        //returned_data = (uint8_t *)i2c_rw(cmd);
+        (uint8_t *)i2c_rw(cmd);
+        //bit_shift = ((returned_data[0] << 8) | returned_data[1]);
 
   //      printf("Bit shift value is %x\n", bit_shift);
         //printf("Raw config reg value: 0x%x%x\n", returned_data[0], returned_data[1]);
@@ -126,7 +127,7 @@ void temp_sensor_sd(uint8_t sd)
             i2c_cmd cmd;
             uint32_t bit_shift;
 	    uint8_t mask_byte_MSB = 0, mask_byte_LSB = 0;
-            uint8_t *returned_data = NULL;
+            //uint8_t *returned_data = NULL;
             cmd.i2c_addr = 0x48;
             cmd.i2c_bus = 2;
             cmd.send_count = 3;
@@ -134,7 +135,7 @@ void temp_sensor_sd(uint8_t sd)
 
             bit_shift = temp_sensor_config_regread();
 
-            returned_data = (uint8_t *)malloc(cmd.recv_count);
+            //returned_data = (uint8_t *)malloc(cmd.recv_count);
             cmd.send_data = (uint8_t *)malloc(cmd.send_count);
     //      printf("Data to be written in config reg is %x\n", data);
 	    if(sd == 1)
@@ -155,7 +156,7 @@ void temp_sensor_sd(uint8_t sd)
 
             uint8_t temp_array[3] = {0x01, mask_byte_MSB, mask_byte_LSB};
             memcpy(cmd.send_data, temp_array, 3);
-            returned_data = (uint8_t *)i2c_rw(cmd);
+            (uint8_t *)i2c_rw(cmd);
             //bit_shift = ((returned_data[0] << 8) | returned_data[1]);
 	    return;
 }
@@ -209,7 +210,7 @@ void temp_sensor_config_conversion_rate(uint8_t rate)
             i2c_cmd cmd;
             uint16_t bit_shift;
             uint8_t mask_byte_MSB = 0, mask_byte_LSB = 0;
-            uint8_t *returned_data = NULL;
+            //uint8_t *returned_data = NULL;
             cmd.i2c_addr = 0x48;
             cmd.i2c_bus = 2;
             cmd.send_count = 3;
@@ -217,7 +218,7 @@ void temp_sensor_config_conversion_rate(uint8_t rate)
 
             bit_shift = temp_sensor_config_regread();
 
-            returned_data = (uint8_t *)malloc(cmd.recv_count);
+            //returned_data = (uint8_t *)malloc(cmd.recv_count);
             cmd.send_data = (uint8_t *)malloc(cmd.send_count);
     //      printf("Data to be written in config reg is %x\n", data);
             if(rate == 0x00)
@@ -255,7 +256,8 @@ void temp_sensor_config_conversion_rate(uint8_t rate)
 
  	    uint8_t light_array[3] = {0x01, mask_byte_MSB, mask_byte_LSB};
             memcpy(cmd.send_data, light_array, 3);
-            returned_data = (uint8_t *)i2c_rw(cmd);
+            //returned_data = (uint8_t *)i2c_rw(cmd);
+            (uint8_t *)i2c_rw(cmd);
             return;
 }
 

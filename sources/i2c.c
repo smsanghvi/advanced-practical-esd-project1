@@ -12,7 +12,7 @@
 uint8_t* i2c_rw(i2c_cmd cmd)
 {       
         uint8_t *received_data = NULL;
-        uint8_t *buf = NULL;
+        //uint8_t *buf = NULL;
         char namebuf[PATH_LEN];
         uint64_t fd;
         
@@ -30,7 +30,7 @@ uint8_t* i2c_rw(i2c_cmd cmd)
                 exit(1);
         }
 
-        buf = (uint8_t *)malloc(cmd.send_count);
+        //buf = (uint8_t *)malloc(cmd.send_count);
         received_data = (uint8_t *)malloc(cmd.recv_count);
 
         if(write(fd, cmd.send_data , cmd.send_count) != cmd.send_count)

@@ -35,9 +35,8 @@
 float light_sensor_read(void)
 {
         i2c_cmd cmd;
-        uint16_t bit_shift;
         uint16_t ch0, ch1;
-        float tmp, lux;
+        float lux;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
         cmd.i2c_bus = 2;
@@ -115,30 +114,30 @@ float light_sensor_read(void)
 //Power ON or Power OFF the light sensor
 void light_sensor_control_regwrite(uint8_t power)
 {
-    i2c_cmd cmd;
-        float tmp, lux;
-        uint8_t *returned_data = NULL;
+        i2c_cmd cmd;
+        //uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
         cmd.i2c_bus = 2;
         cmd.send_count = 2;
         cmd.recv_count = 1;
 
-        returned_data = (uint8_t *)malloc(cmd.recv_count);
+        //returned_data = (uint8_t *)malloc(cmd.recv_count);
         cmd.send_data = (uint8_t *)malloc(cmd.send_count);
-    if(power == 1)
-    {
+        if(power == 1)
+        {
             //Power ON the light sensor
             cmd.send_data[0] = 0x80;
             cmd.send_data[1] = 0x03;
-    }
-    else if(power == 0)
-    {
-        //Power OFF the light sensor
+        }
+        else if(power == 0)
+        {
+            //Power OFF the light sensor
             cmd.send_data[0] = 0x80;
             cmd.send_data[1] = 0x00;
-    };
+        };
 
-        returned_data = (uint8_t *)i2c_rw(cmd);
+        //returned_data = (uint8_t *)i2c_rw(cmd);
+        (uint8_t *)i2c_rw(cmd);
 }
 
 
@@ -146,7 +145,7 @@ void light_sensor_control_regwrite(uint8_t power)
 uint8_t light_sensor_control_regread(void)
 {
         i2c_cmd cmd;
-        uint16_t bit_shift;
+        //uint16_t bit_shift;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
         cmd.i2c_bus = 2;
@@ -165,7 +164,7 @@ uint8_t light_sensor_control_regread(void)
 void light_sensor_integtime_regwrite(uint8_t value)
 {
     i2c_cmd cmd;
-        uint16_t bit_shift;
+        //uint16_t bit_shift;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
         cmd.i2c_bus = 2;
@@ -214,7 +213,7 @@ uint8_t light_sensor_id_regread(void)
 void light_sensor_intrcontrol_regwrite(uint8_t value)
 {
         i2c_cmd cmd;
-        uint16_t bit_shift;
+        //uint16_t bit_shift;
         uint8_t *returned_data = NULL;
         cmd.i2c_addr = 0x39;
         cmd.i2c_bus = 2;

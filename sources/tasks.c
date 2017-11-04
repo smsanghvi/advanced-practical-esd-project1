@@ -60,11 +60,6 @@ static volatile int count_light = 0;
 static volatile int count_light_cpy = 0;
 static volatile int count_rqst = 0;
 
-static uint32_t counter1 = 0;
-//static uint32_t counter1_copy = 0;
-static uint32_t counter2 = 1000;
-static uint32_t counter2_copy = 1000;
-
 static volatile uint32_t temp_loop;
 static volatile uint32_t light_loop;
 
