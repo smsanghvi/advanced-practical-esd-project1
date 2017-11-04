@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include "temp_sensor.h"
+#include "light_sensor.h"
 
 #define LOG_BUFFER_SIZE 10000
 uint32_t read_config = 1;
@@ -153,20 +154,112 @@ void *temp_thread_fn(void *threadid){
 			Read/write for request messages from temperature thread
 		*/	
 		if(!pthread_mutex_lock(&mutex_rqst)){
-			//triggering a request
-			if(temp_loop % 10 == 0){
+			//triggering a request - read light control register
+			if(temp_loop % 25 == 0){
 				msg_rqst.source_task = id;
 				msg_rqst.type = REQUEST_MESSAGE;
-				msg_rqst.data = "Light REQUEST";
+				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_CONTROL_REG_READ;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
-					printf("Temp thread could not send data to light thread.\n");
+					printf("Temperature thread could not send data to light thread.\n");
 				}
 				else{
-					//printf("Sent temp thread 1: %s\n", (char *)msg_rqst.data);
-				}				
+					//printf("Sent temperature thread 1: %s\n", (char *)msg_rqst.data);
+				}		
 			}
+			//triggering a request - send power on command
+			else if(temp_loop == 10 || temp_loop == 275 || temp_loop == 315){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_POWER_ON;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}		
+			}
+			//triggering a request - send power off command
+			else if(temp_loop == 155){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_POWER_OFF;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}	
+			}	
+			//triggering a request - reading light id register
+			else if(temp_loop == 35 || temp_loop == 375){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_ID_READ;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}	
+			}
+			//triggering a request - set integration time of light sensor
+			else if(temp_loop == 15 || temp_loop == 45){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_SET_INTEGRATION_TIME;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}	
+			}
+			//triggering a request - enable interrupt mode
+			else if(temp_loop == 27 || temp_loop == 253){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_ENABLE;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}	
+			}
+			//triggering a request - disable interrupt mode
+			else if(temp_loop == 85 || temp_loop == 356){
+				msg_rqst.source_task = id;
+				msg_rqst.type = REQUEST_MESSAGE;
+				msg_rqst.data = &read_config;
+				msg_rqst.request_type = LIGHT_REQUEST;
+				msg_rqst.msg_rqst_type = LIGHT_POWER_OFF;
+				gettimeofday(&msg_rqst.t, NULL);
+				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+					printf("Temperature thread could not send data to light thread.\n");
+				}
+				else{
+					//printf("Sent light thread 1: %s\n", (char *)msg_rqst.data);
+				}	
+
+			}	
 			else if(!mq_receive(mqd_req, (char *)&msg_rqst, sizeof(msg_rqst), NULL)){
 				//no messages in queue
 			}
@@ -184,7 +277,7 @@ void *temp_thread_fn(void *threadid){
 						printf("Temp thread could not send data to light thread.\n");
 					}
 					else{
-						printf("Sent temp thread ideal: %x and loop count is: %d\n", *(uint32_t *)msg_rqst.data, temp_loop);
+						//printf("Sent temp thread ideal: %x and loop count is: %d\n", *(uint32_t *)msg_rqst.data, temp_loop);
 					}	
 					
 					msg_rqst.source_task = id;
@@ -268,20 +361,105 @@ void *temp_thread_fn(void *threadid){
 					}
 					pthread_mutex_unlock(&mutex_log_temp);
 
-				}				
+				}	
 				//you are reading your own data
-				else if(msg_rqst.request_type == LIGHT_REQUEST){
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_CONTROL_REG_READ){
 					msg_rqst.source_task = id;
 					msg_rqst.type = REQUEST_MESSAGE;
-					msg_rqst.data = "Light REQUEST";
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_CONTROL_REG_READ;
 					msg_rqst.request_type = LIGHT_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
 					}
 					else{
-						//printf("Sent temp thread self:  %s\n", (char *)msg_rqst.data);
-					}					
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}	
+				}
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_POWER_ON){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_POWER_ON;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}	
+				}
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_POWER_OFF){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_POWER_OFF;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}
+				}	
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_SET_INTEGRATION_TIME){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_SET_INTEGRATION_TIME;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}
+				}
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_ID_READ){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_ID_READ;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}
+				}
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_INTERRUPT_ENABLE){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_ENABLE;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}
+				}
+				else if(msg_rqst.request_type == LIGHT_REQUEST && msg_rqst.msg_rqst_type == LIGHT_INTERRUPT_DISABLE){
+					msg_rqst.source_task = id;
+					msg_rqst.type = REQUEST_MESSAGE;
+					msg_rqst.data = &read_config;
+					msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_DISABLE;
+					msg_rqst.request_type = LIGHT_REQUEST;
+					gettimeofday(&msg_rqst.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
+						printf("Temp thread could not send data to light thread.\n");
+					}
+					else{
+						//printf("Sent light thread self: %s\n", (char *)msg_rqst_light.data);
+					}
 				}
 				//you have a response to be read
 				else if(msg_rqst.type == LOG_MESSAGE && msg_rqst.request_type == NOT_REQUEST){
@@ -303,27 +481,33 @@ void *light_thread_fn(void *threadid){
 	task_id id =  lght_thread;
 	//message_type type = LOG_MESSAGE;
 	
+	//power on the light sensor
+	light_sensor_control_regwrite(1);
+	float lux_value, lux_value_copy;
 	static message msg_light, msg_light_cp, msg_rqst_light;
 
 	while(1){
 		light_loop++;
+		
+		//reading the lux value
+		lux_value = light_sensor_read();
 		/*
 			Constructing message that contains light data and is sent to logger
 		*/
 		msg_light.source_task = id;
 		msg_light.type = LOG_MESSAGE;
-		msg_light.data = &counter2;
+		msg_light.data = &lux_value;
 		gettimeofday(&msg_light.t, NULL);
 		msg_light.request_type = NOT_REQUEST;
 
-		counter2_copy = counter2;
+		lux_value_copy = lux_value;
 
 		if(!pthread_mutex_lock(&mutex_log_light)){
 			if(count_light<10 && mq_send(mqd_light, (const char *)&msg_light, sizeof(msg_light), 1)){
 				printf("Light thread could not send data to logger.\n");
 			}
 			else if(count_light<10){
-				//printf("Sent %d\n", counter2++);
+				printf("Sent %f\n", lux_value);
 				count_light++;
 			}	
 		}
@@ -335,7 +519,7 @@ void *light_thread_fn(void *threadid){
 		*/
 		msg_light_cp.source_task = id;
 		msg_light_cp.type = LOG_MESSAGE;
-		msg_light_cp.data = &counter2_copy;
+		msg_light_cp.data = &lux_value_copy;
 		gettimeofday(&msg_light_cp.t, NULL);
 		msg_light.request_type = NOT_REQUEST;
 
@@ -398,16 +582,19 @@ void *light_thread_fn(void *threadid){
 				else{
 					//printf("Sent light thread 1: %s\n", (char *)msg_rqst_light.data);
 				}		
-			}							
+			}	
+	
 			else if(!mq_receive(mqd_req, (char *)&msg_rqst_light, sizeof(msg_rqst_light), NULL)){
 				//no messages in queue
 			}
 			else{
 				//ideal case of sending request
-				if(msg_rqst_light.request_type == LIGHT_REQUEST){
+				//sending response to reading control register
+				if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_CONTROL_REG_READ){
+					uint8_t control_read = light_sensor_control_regread();
 					msg_rqst_light.source_task = id;
 					msg_rqst_light.type = LOG_MESSAGE;
-					msg_rqst_light.data = "Light RESPONSE";
+					msg_rqst_light.data = &control_read;
 					msg_rqst_light.request_type = NOT_REQUEST;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
@@ -419,6 +606,7 @@ void *light_thread_fn(void *threadid){
 
 					msg_rqst_light.source_task = id;
 					msg_rqst_light.type = RESPONSE_MESSAGE;
+					sprintf((char *)msg_rqst_light.data, "Control register read value: %x", control_read);
 					gettimeofday(&msg_rqst_light.t, NULL);
 
 					if(!pthread_mutex_lock(&mutex_log_light)){
@@ -432,6 +620,206 @@ void *light_thread_fn(void *threadid){
 					}
 					pthread_mutex_unlock(&mutex_log_light);
 				}
+
+				//sending response to power off sensor
+				if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_POWER_OFF){
+					//power off sensor
+					light_sensor_control_regwrite(0);
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = "Power off";
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					msg_rqst_light.data = "Power off light sensor";
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
+				//sending response to power on sensor
+				else if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_POWER_ON){
+					//power on sensor
+					light_sensor_control_regwrite(1);
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = "Power on";
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					msg_rqst_light.data = "Power on light sensor";
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
+				//sending response to set integration time
+				else if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_SET_INTEGRATION_TIME){
+					//setting integration time
+					light_sensor_integtime_regwrite(0);
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00";
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00 on light sensor";
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
+				//sending response to read ID
+				else if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_ID_READ){
+					//reading ID
+					uint8_t id = light_sensor_id_regread();
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = &id;
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					sprintf((char *)msg_rqst_light.data, "ID read value: %d", id);
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
+				//sending response to enable interrupts
+				else if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_INTERRUPT_ENABLE){
+					//setting integration time
+					light_sensor_integtime_regwrite(1);
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00";
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00 on light sensor";
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
+
+				//sending response to disable interrupts
+				else if(msg_rqst_light.request_type == LIGHT_REQUEST && msg_rqst_light.msg_rqst_type == LIGHT_INTERRUPT_DISABLE){
+					//setting integration time
+					light_sensor_integtime_regwrite(0);
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = LOG_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00";
+					msg_rqst_light.request_type = NOT_REQUEST;
+					gettimeofday(&msg_rqst_light.t, NULL);
+					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+						printf("Light thread could not send data to temp thread.\n");
+					}
+					else{
+						//printf("Sent light thread ideal: %s\n", (char *)msg_rqst_light.data);
+					}	
+
+					msg_rqst_light.source_task = id;
+					msg_rqst_light.type = RESPONSE_MESSAGE;
+					msg_rqst_light.data = "Set integration time to 0x00 on light sensor";
+					gettimeofday(&msg_rqst_light.t, NULL);
+
+					if(!pthread_mutex_lock(&mutex_log_light)){
+						if(count_temp<10 && mq_send(mqd_light, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
+							printf("Light thread could not send data to logger.\n");
+						}
+						else if(count_light<10){
+							//printf("Sent: %d\n", counter1++);
+							count_light++;
+						}
+					}
+					pthread_mutex_unlock(&mutex_log_light);
+				}
+
 				//you are reading your own data
 				else if(msg_rqst_light.request_type == TEMP_REQUEST && msg_rqst_light.msg_rqst_type == TEMP_CONFIG_READ){
 					msg_rqst_light.source_task = id;
@@ -478,6 +866,7 @@ void *light_thread_fn(void *threadid){
 					}	
 
 				}
+
 				//you have a response to be read
 				else if(msg_rqst_light.type == LOG_MESSAGE && msg_rqst_light.request_type == NOT_REQUEST){
 					//printf("Data in light thread is: %x and loop count is: %d\n", *(uint32_t *)msg_rqst_light.data, light_loop);				
@@ -487,7 +876,6 @@ void *light_thread_fn(void *threadid){
 		}
 		pthread_mutex_unlock(&mutex_rqst);	
 	
-
 		usleep(1500);
 	}
 }
@@ -530,15 +918,14 @@ void *logger_thread_fn(void *threadid){
 								
 		}
 
-
 		//checking the light queue
 		if(!mq_receive(mqd_light, (char *)&msg_t, sizeof(msg_t), NULL)){
 			printf("Logger thread could not receive data from light thread.\n");
 		}	
 		else if(count_light>0 && count_light<11){
 			if(msg_t.type == (LOG_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %d\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, *(uint32_t *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %f\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, *(float *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_light--;
@@ -726,7 +1113,7 @@ int main(){
 			}	
 			else
 			{
-				//printf("Main thread: Temperature data is %f\n", *(float *)msg_te.data);
+				printf("Main thread: Temperature data is %f\n", *(float *)msg_te.data);
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}
@@ -740,7 +1127,7 @@ int main(){
 			}	
 			else
 			{
-				//printf("Main thread: Light data is %d\n", *(uint32_t *)msg_te.data);
+				printf("Main thread: Light data is %f\n", *(float *)msg_te.data);
 			}
 			pthread_mutex_unlock(&mutex_light_main);
 		}

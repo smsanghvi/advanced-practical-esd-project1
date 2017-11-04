@@ -80,9 +80,15 @@ typedef enum request_type_t{
 /*Enumerating the type of request sent between light and temperature threads*/
 typedef enum type_rqst{
 	TEMP_CONFIG_READ,
-	TEMP_CONFIG_WRITE,
 	TEMP_SHUTDOWN_ENABLE,
-	TEMP_SHUTDOWN_DISABLE
+	TEMP_SHUTDOWN_DISABLE,
+    LIGHT_POWER_ON,
+    LIGHT_POWER_OFF,
+    LIGHT_CONTROL_REG_READ,
+    LIGHT_SET_INTEGRATION_TIME,
+    LIGHT_ID_READ,
+    LIGHT_INTERRUPT_ENABLE,
+    LIGHT_INTERRUPT_DISABLE
 }type_of_request;
 
 /*Struct of the message to be sent or received*/
