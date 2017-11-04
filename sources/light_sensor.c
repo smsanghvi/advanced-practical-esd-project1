@@ -210,14 +210,24 @@ void light_sensor_intrcontrol_regwrite(uint8_t value)
 
         if(value > 0x01)
             return;         //No values exist after 0x01
-        else
+         
+        cmd.send_count = 2;
+        
+        //Interrupts disabled
+        if(value == 0x00)
         {
-            cmd.send_count = 2;
             cmd.send_data = (uint8_t *)malloc(cmd.send_count);
             cmd.send_data[0] = 0x86;
-            cmd.send_data[1] = returned_data[0] | value; //interrupt control  value sent, not affecting other bit fields
+            cmd.send_data[1] = value;
             returned_data = (uint8_t *)i2c_rw(cmd);
         }
 
-
+        //Interrupts enabled
+        else if(value == 0x01)
+        {
+            cmd.send_data = (uint8_t *)malloc(cmd.send_count);
+            cmd.send_data[0] = 0x86;
+            cmd.send_data[1] = returned_data[0] | (0x10);
+            returned_data = (uint8_t *)i2c_rw(cmd);
+        }
 }
