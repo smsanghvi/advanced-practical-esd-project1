@@ -8,6 +8,9 @@
 #include <math.h>
 #include "light_sensor.h"
 
+#define NIGHT	(0.030400)
+#define DAY	()
+
 //Read light values. Convert to Lux values
 float light_sensor_read(void)
 {
@@ -29,6 +32,7 @@ float light_sensor_read(void)
         cmd.send_data[0] = 0x80;
     cmd.send_data[1] = 0x03;
         returned_data = (uint8_t *)i2c_rw(cmd);
+	 usleep(1000);
 
     //Setting the integration time to 13.7ms (reduces ADC count value to min (=5047)
     cmd.send_data[0] = 0x81;
