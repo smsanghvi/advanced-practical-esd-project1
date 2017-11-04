@@ -149,9 +149,9 @@ void temp_sensor_sd(uint8_t sd)
 	{
 	    mask_byte_MSB = (bit_shift & 0xFF00) >> 8;
 	    mask_byte_MSB &= ~(0x01);
-            printf("MSB is %x\n", mask_byte_MSB);
+        //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF);
-            printf("LSB is %x\n", mask_byte_LSB);
+        //printf("LSB is %x\n", mask_byte_LSB);
 	}
 
             uint8_t temp_array[3] = {0x01, mask_byte_MSB, mask_byte_LSB};
@@ -224,34 +224,34 @@ void temp_sensor_config_conversion_rate(uint8_t rate)
             if(rate == 0x00)
         {
             mask_byte_MSB = (bit_shift & 0xFF00) >> 8;
-            printf("MSB is %x\n", mask_byte_MSB);
+            //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF) >> 8;
 	    mask_byte_LSB &= ~(0xB0);	//clearing CR1 & CR0
-            printf("LSB is %x\n", mask_byte_LSB);
+            //printf("LSB is %x\n", mask_byte_LSB);
         }
             else if (rate == 0x01)
         {
             mask_byte_MSB = (bit_shift & 0xFF00) >> 8;
-            printf("MSB is %x\n", mask_byte_MSB);
+            //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF) >> 8 | (0x40);	//set CR0 = 1
             mask_byte_LSB &= ~(0x80);				//clear CR1 = 0
-            printf("LSB is %x\n", mask_byte_LSB);
+            //printf("LSB is %x\n", mask_byte_LSB);
         }
 	    else if (rate == 0x10)
         {
             mask_byte_MSB = (bit_shift & 0xFF00) >> 8;
-            printf("MSB is %x\n", mask_byte_MSB);
+            //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF) >> 8 | (0x80); //set CR1 = 1
             mask_byte_LSB &= ~(0x40);                           //clear CR0 = 0
-            printf("LSB is %x\n", mask_byte_LSB);
+            //printf("LSB is %x\n", mask_byte_LSB);
         }
 
 	    else if (rate == 0x11)
         {
             mask_byte_MSB = (bit_shift & 0xFF00) >> 8;
-            printf("MSB is %x\n", mask_byte_MSB);
+            //printf("MSB is %x\n", mask_byte_MSB);
             mask_byte_LSB = (bit_shift & 0x00FF) >> 8 | (0xB0); //set CR0 & CR1 = 1
-            printf("LSB is %x\n", mask_byte_LSB);
+            //printf("LSB is %x\n", mask_byte_LSB);
         }
 
  	    uint8_t light_array[3] = {0x01, mask_byte_MSB, mask_byte_LSB};

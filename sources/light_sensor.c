@@ -51,7 +51,7 @@ float light_sensor_read(void)
         cmd.send_data[0] = 0x80;
         cmd.send_data[1] = 0x03;
         returned_data = (uint8_t *)i2c_rw(cmd);
-	    usleep(1000);
+	    usleep(250);
 
     //Setting the integration time to 13.7ms (reduces ADC count value to min (=5047)
     cmd.send_data[0] = 0x81;
@@ -84,28 +84,28 @@ float light_sensor_read(void)
     if((ch1/ch0) <= 0.50)
     {
         lux = (0.0304 * ch0) - (0.062 * ch0 * pow(ch1/ch0, 1.4));
-        printf("Lux1 value is %f\n", lux);
+        //printf("Lux1 value is %f\n", lux);
     }
     else if((ch1/ch0) > 0.50 && (ch1/ch0) <= 0.61)
     {
         lux = (0.0224 * ch0) - (0.031 * ch1);
-            printf("Lux2 value is %f\n", lux);
+            //printf("Lux2 value is %f\n", lux);
     }
 
     else if((ch1/ch0) > 0.61 && (ch1/ch0) <= 0.80)
     {
         lux = (0.0128 * ch0) - (0.0153 * ch1);
-        printf("Lux2 value is %f\n", lux);
+        //printf("Lux2 value is %f\n", lux);
     }
     else if((ch1/ch0) > 0.80 && (ch1/ch0) <= 1.30)
     {
         lux = (0.00146 * ch0) - (0.00112 * ch1);
-            printf("Lux3 value is %f\n", lux);
+            //printf("Lux3 value is %f\n", lux);
     }
     else if((ch1/ch0) > 1.30)
     {
         lux = 0;
-            printf("Lux4 value is %f\n", lux);
+            //printf("Lux4 value is %f\n", lux);
     }
 
     return lux;

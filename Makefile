@@ -1,5 +1,5 @@
 include sources.mk
-CC = gcc
+CC = arm-linux-gnueabihf-gcc
 
 CFLAGS = -g -Wall -O0 -I $(HDRPATH)
 
