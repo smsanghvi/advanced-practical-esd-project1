@@ -33,10 +33,14 @@
 #include <sys/time.h>
 #include "temp_sensor.h"
 #include "light_sensor.h"
+#include "led.h"
 
 #define LOG_BUFFER_SIZE 10000
 #define DAY				(100)
 #define NIGHT			(0)
+#define TEMP_LOWER		(5)
+#define TEMP_UPPER		(50)
+
 uint32_t read_config = 1;
 int retval;
 
@@ -82,6 +86,7 @@ void signal_handler(int signum)
 		printf("\nClosing mqueue and file...\n");
 		printf("Temp queue error count: %d\n", temp_hb_err);
 		printf("Light queue error count: %d\n", light_hb_err);
+		LEDOff();
 		mq_close(mqd_temp);
 		mq_close(mqd_light);
 		mq_close(mqd_temp_cp);
@@ -99,9 +104,9 @@ void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
 	task_id id =  temp_thread;
 	uint32_t config_read;
-	uint32_t abs_time = 0;
+	// uint32_t abs_time = 0;
 	//message_type type = LOG_MESSAGE;
-	struct timeval now, current;
+	// struct timeval now;
 
 
 	static message msg_temp, msg_temp_cp, msg_rqst, msg_heartbeat;
@@ -110,11 +115,10 @@ void *temp_thread_fn(void *threadid){
 	temp_sensor_config_regwrite(0x60A0);
 	float temperature, temperature_copy;
 	
-	gettimeofday(&now, NULL);
-	abs_time = now.tv_usec + 1000000;		//1000ms heartbeat timeout
+	// gettimeofday(&now, NULL);
+	// abs_time = now.tv_usec + 1000000;		//1000ms heartbeat timeout
 
-	while(loop_count < 100)
-	{
+	while(1){
 		temp_loop++;
 		//reading the sensor for temperature data
 		temperature = temp_sensor_read();
@@ -1083,8 +1087,8 @@ int main(){
 	pthread_attr_t attr;
 	static message msg3;
 	// uint32_t temp_heartbeat;
-	uint8_t light_heartbeat;
-	struct timeval current_temp, current_light, temp_heartbeat;
+	//uint8_t light_heartbeat;
+	struct timeval current_temp, current_light;
 	// clock_t temp_time;
 
    if(pthread_mutex_init(&mutex_log_temp, NULL)){
@@ -1272,7 +1276,18 @@ int main(){
 			}	
 			else
 			{
-				//printf("Main thread: Temperature data is %f\n", *(float *)msg_te.data);
+				if(*(float *)msg_te.data > TEMP_UPPER - 10 && *(float *)msg_te.data < TEMP_UPPER + 10)
+				{
+					printf("TOO HOT!!!\n");
+					LEDOn();	//Warning LED ON
+					signal_handler(SIGINT);
+				}
+				if(*(float *)msg_te.data > TEMP_LOWER - 10 && *(float *)msg_te.data < TEMP_LOWER + 10)
+				{
+					printf("TOO COLD!!!\n");
+					LEDOn();	//Warning LED ON
+					signal_handler(SIGINT);
+				}						
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}
@@ -1314,6 +1329,13 @@ int main(){
 				if(*(float *)msg_te.data > DAY - 10 && *(float *)msg_te.data < DAY + 10)
 				{
 					printf("TOO BRIGHT!!!\n");
+					LEDOn();	//Warning LED ON
+					signal_handler(SIGINT);
+				}
+				if(*(float *)msg_te.data < NIGHT + 0.3 && *(float *)msg_te.data > NIGHT)
+				{
+					printf("TOO DARK!!!\n");
+					LEDOn();	//Warning LED ON
 					signal_handler(SIGINT);
 				}
 			}
@@ -1324,7 +1346,7 @@ int main(){
 			// pthread_cancel(temperature_thread);
 			// pthread_exit(&retval);
 
-		// loop_count++;
+		loop_count++;
 		usleep(1000);
 	}
 	
