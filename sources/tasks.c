@@ -35,7 +35,10 @@
 #include "light_sensor.h"
 
 #define LOG_BUFFER_SIZE 10000
+#define DAY				(100)
+#define NIGHT			(0)
 uint32_t read_config = 1;
+int retval;
 
 pthread_t temperature_thread;
 pthread_t light_thread;
@@ -59,12 +62,16 @@ static volatile int count_temp_cpy = 0;
 static volatile int count_light = 0;
 static volatile int count_light_cpy = 0;
 static volatile int count_rqst = 0;
+static volatile int temp_hb_err = 0;
+static volatile int light_hb_err = 0;
+
+static volatile int loop_count = 0;
 
 static volatile uint32_t temp_loop;
 static volatile uint32_t light_loop;
 
 struct mq_attr mq_attr_log;
-static mqd_t mqd_temp, mqd_temp_cp, mqd_light, mqd_light_cp, mqd_req;
+static mqd_t mqd_temp, mqd_temp_cp, mqd_light, mqd_light_cp, mqd_req, mqd_temp_hb, mqd_light_hb;
 sem_t temp_sem, light_sem;
 
 
@@ -73,11 +80,15 @@ void signal_handler(int signum)
 	if (signum == SIGINT)
 	{
 		printf("\nClosing mqueue and file...\n");
+		printf("Temp queue error count: %d\n", temp_hb_err);
+		printf("Light queue error count: %d\n", light_hb_err);
 		mq_close(mqd_temp);
 		mq_close(mqd_light);
 		mq_close(mqd_temp_cp);
 		mq_close(mqd_light_cp);
 		mq_close(mqd_req);
+		mq_close(mqd_temp_hb);
+		mq_close(mqd_light_hb);
 		fclose(fp);
 		exit(0);
 	}
@@ -88,15 +99,22 @@ void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
 	task_id id =  temp_thread;
 	uint32_t config_read;
+	uint32_t abs_time = 0;
 	//message_type type = LOG_MESSAGE;
+	struct timeval now, current;
 
-	static message msg_temp, msg_temp_cp, msg_rqst;
+
+	static message msg_temp, msg_temp_cp, msg_rqst, msg_heartbeat;
 
 	//writing the defaults to the configuration register
 	temp_sensor_config_regwrite(0x60A0);
 	float temperature, temperature_copy;
+	
+	gettimeofday(&now, NULL);
+	abs_time = now.tv_usec + 1000000;		//1000ms heartbeat timeout
 
-	while(1){
+	while(loop_count < 100)
+	{
 		temp_loop++;
 		//reading the sensor for temperature data
 		temperature = temp_sensor_read();
@@ -318,7 +336,7 @@ void *temp_thread_fn(void *threadid){
 							printf("Temperature thread could not send data to logger.\n");
 						}
 						else if(count_temp<10){
-							// /printf("Temperature sensor in shutdown mode.\n");
+						//	printf("Temperature sensor in shutdown mode.\n");
 							count_temp++;
 						}
 					}
@@ -498,8 +516,38 @@ void *temp_thread_fn(void *threadid){
 		}
 		pthread_mutex_unlock(&mutex_rqst);	
 
+
+		/*
+			Heartbeat message to be sent to main
+		*/
+		msg_heartbeat.source_task = id;
+		msg_heartbeat.type = HEARTBEAT_MESSAGE;
+		msg_heartbeat.data = &temperature_copy;
+		msg_heartbeat.request_type = NOT_REQUEST;
+		gettimeofday(&msg_heartbeat.t, NULL);
+
+		if(!pthread_mutex_lock(&mutex_temp_main))
+		{	
+			//gettimeofday(&current, NULL);
+			//if(current.tv_usec < abs_time + 100000 && current.tv_usec > abs_time - 100000)
+			//{
+				if(mq_send(mqd_temp_hb, (const char *)&msg_heartbeat, sizeof(msg_heartbeat), 1) < 0)
+					printf("Temperature thread could not send heartbeat to main.\n");
+				//abs_time = current.tv_usec + 1000000;
+				//printf("temp Heartbeat sent\n");
+			//}
+			else{
+				// printf("Error in sending HB\n");
+			}
+
+
+		}
+		pthread_mutex_unlock(&mutex_temp_main);
+		// loop_count++;	
 		usleep(1800);
 	}
+	// pthread_exit(&retval);
+	// pthread_cancel(temperature_thread);
 }
 
 
@@ -512,7 +560,7 @@ void *light_thread_fn(void *threadid){
 	//power on the light sensor
 	light_sensor_control_regwrite(1);
 	float lux_value, lux_value_copy;
-	static message msg_light, msg_light_cp, msg_rqst_light;
+	static message msg_light, msg_light_cp, msg_rqst_light, msg_heartbeat_L;
 
 	while(1){
 		light_loop++;
@@ -931,9 +979,30 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = DUMMY_MESSAGE;
 				}
 			}
-		}
 		pthread_mutex_unlock(&mutex_rqst);	
-	
+		}
+
+		/*
+			Heartbeat message to be sent to main
+		*/
+		msg_heartbeat_L.source_task = id;
+		msg_heartbeat_L.type = HEARTBEAT_MESSAGE;
+		msg_heartbeat_L.data = &lux_value_copy;
+		msg_heartbeat_L.request_type = NOT_REQUEST;
+		gettimeofday(&msg_heartbeat_L.t, NULL);
+
+		if(!pthread_mutex_lock(&mutex_temp_main))
+		{	
+			
+			if(mq_send(mqd_light_hb, (const char *)&msg_heartbeat_L, sizeof(msg_heartbeat_L), 1) < 0)
+				printf("Light thread could not send heartbeat to main.\n");
+			else
+			{
+				// printf("Error in sending HB\n");
+			}
+			
+		}
+		pthread_mutex_unlock(&mutex_temp_main);
 		usleep(750);
 	}
 }
@@ -1013,6 +1082,10 @@ int main(){
 
 	pthread_attr_t attr;
 	static message msg3;
+	// uint32_t temp_heartbeat;
+	uint8_t light_heartbeat;
+	struct timeval current_temp, current_light, temp_heartbeat;
+	// clock_t temp_time;
 
    if(pthread_mutex_init(&mutex_log_temp, NULL)){
       printf("Error in initializing log temp mutex.\n");  
@@ -1049,6 +1122,8 @@ int main(){
 	mq_unlink(LIGHT_MSG_QUEUE_RESPONSE);
 	mq_unlink(LIGHT_MSG_QUEUE_RESPONSE_COPY);
 	mq_unlink(MSG_QUEUE_REQUEST);
+	mq_unlink(MSG_QUEUE_TEMP_HB);
+	mq_unlink(MSG_QUEUE_LIGHT_HB);
 
 	mqd_temp = mq_open(TEMP_MSG_QUEUE_RESPONSE, \
 						O_CREAT|O_RDWR|O_NONBLOCK, \
@@ -1075,16 +1150,15 @@ int main(){
 						0666, \
 						&mq_attr_log);
 
-	// if(mqd_log < 0)
- //  	{
- //    	perror("sender mq_open");
- //    	exit(1);
- //  	}
- //  	else
- //  	{
- //  		printf("message queue value is %d\n", mqd_log);
- //    	printf("Log message queue created.\n");
- //  	}
+	mqd_temp_hb = mq_open(MSG_QUEUE_TEMP_HB, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
+
+	mqd_light_hb = mq_open(MSG_QUEUE_LIGHT_HB, \
+						O_CREAT|O_RDWR|O_NONBLOCK, \
+						0666, \
+						&mq_attr_log);
 
   	signal(SIGINT, signal_handler);
 	
@@ -1155,15 +1229,42 @@ int main(){
 	}
 	pthread_mutex_unlock(&mutex_log_temp);
 
-	static message msg_te;
+	static message msg_te, msg_hb;
 
-	// usleep(1000);
+	gettimeofday(&current_temp, NULL);
+	gettimeofday(&current_light, NULL);
+	
+	
 	while(1)
 	{
 		// printf("Entered main while loop\n");
 		
 		if(!pthread_mutex_lock(&mutex_temp_main))
 		{	
+			//Checking for temp task heartbeat message
+			gettimeofday(&current_temp, NULL);
+			// temp_heartbeat = current_temp.tv_sec + 1;	//1s heartbeat 
+			if(mq_receive(mqd_temp_hb, (char *)&msg_hb, sizeof(msg_hb), NULL) < 0)
+			{
+				// printf("Main thread could not receive data from temp thread.\n");
+			}
+			else if(current_temp.tv_usec < msg_hb.t.tv_usec + 3000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
+			{
+				if(msg_hb.type == HEARTBEAT_MESSAGE)
+				{
+					// printf("Temp heartbeat: %d secs %d usecs\n", msg_hb.t.tv_sec, msg_hb.t.tv_usec);
+					// printf("Main task heartbeat: %d secs %d usecs\n", current_temp.tv_sec, current_temp.tv_usec);
+				}
+			}
+
+			else
+			{
+				printf("Temp heartbeat not found\n");
+				temp_hb_err++;
+				if(temp_hb_err > 5)
+					signal_handler(SIGINT);
+			}
+
 			//checking the temp queue
 			if(mq_receive(mqd_temp_cp, (char *)&msg_te, sizeof(msg_te), NULL) < 0)
 			{
@@ -1171,13 +1272,37 @@ int main(){
 			}	
 			else
 			{
-				printf("Main thread: Temperature data is %f\n", *(float *)msg_te.data);
+				//printf("Main thread: Temperature data is %f\n", *(float *)msg_te.data);
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}
 		
 		if(!pthread_mutex_lock(&mutex_light_main))
 		{
+			//Checking for light task heartbeat message
+			gettimeofday(&current_light, NULL);
+			if(mq_receive(mqd_light_hb, (char *)&msg_hb, sizeof(msg_hb), NULL) < 0)
+			{
+				// printf("Main thread could not receive data from temp thread.\n");
+			}
+			else if(current_light.tv_usec < msg_hb.t.tv_usec + 3000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
+			{
+				if(msg_hb.type == HEARTBEAT_MESSAGE)
+				{
+					// printf("Light heartbeat: %d secs %d usecs\n", msg_hb.t.tv_sec, msg_hb.t.tv_usec);
+					// printf("Main task heartbeat: %d secs %d usecs\n", current_temp.tv_sec, current_temp.tv_usec);
+					// temp_heartbeat.tv_sec = current_temp.tv_sec;	
+					// temp_heartbeat.tv_usec = current_temp.tv_usec + 800000;
+				}
+			}
+			else
+			{
+				printf("Light heartbeat not found\n");
+				light_hb_err++;
+				if(light_hb_err > 5)
+					signal_handler(SIGINT);
+			}
+
 			//checking the light queue
 			if(mq_receive(mqd_light_cp, (char *)&msg_te, sizeof(msg_te), NULL) < 0)
 			{
@@ -1186,10 +1311,20 @@ int main(){
 			else
 			{
 				printf("Main thread: Light data is %f\n", *(float *)msg_te.data);
+				if(*(float *)msg_te.data > DAY - 10 && *(float *)msg_te.data < DAY + 10)
+				{
+					printf("TOO BRIGHT!!!\n");
+					signal_handler(SIGINT);
+				}
 			}
 			pthread_mutex_unlock(&mutex_light_main);
 		}
 
+		// if(loop_count >= 100)
+			// pthread_cancel(temperature_thread);
+			// pthread_exit(&retval);
+
+		// loop_count++;
 		usleep(1000);
 	}
 	

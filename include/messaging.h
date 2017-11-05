@@ -28,6 +28,8 @@
 #define LIGHT_MSG_QUEUE_RESPONSE "/light_log_queue_response"
 #define LIGHT_MSG_QUEUE_RESPONSE_COPY "/light_log_queue_response_copy"
 #define MSG_QUEUE_REQUEST "/queue_request"
+#define MSG_QUEUE_TEMP_HB "/temp_heartbeat_queue"
+#define MSG_QUEUE_LIGHT_HB "/light_heartbeat_queue"
 
 #define MAX_MESSAGE_LENGTH 1000
 #define ERROR (-1)
