@@ -78,6 +78,8 @@ struct mq_attr mq_attr_log;
 static mqd_t mqd_temp, mqd_temp_cp, mqd_light, mqd_light_cp, mqd_req, mqd_temp_hb, mqd_light_hb;
 sem_t temp_sem, light_sem;
 
+const char* log_levels[] = {"LOG_CRITICAL_FAILURE", "LOG_SENSOR_EXTREME_DATA", \
+ "LOG_MODULE_STARTUP", "LOG_INFO_DATA", "LOG_REQUEST", "LOG_HEARTBEAT" };
 
 void signal_handler(int signum)
 {
@@ -129,6 +131,7 @@ void *temp_thread_fn(void *threadid){
 		msg_temp.type = LOG_MESSAGE;
 		msg_temp.data = &temperature;
 		msg_temp.request_type = NOT_REQUEST;
+		msg_temp.log_level = LOG_INFO_DATA;
 		gettimeofday(&msg_temp.t, NULL);
 
 		temperature_copy = temperature;
@@ -152,7 +155,8 @@ void *temp_thread_fn(void *threadid){
 		msg_temp_cp.source_task = id;
 		msg_temp_cp.type = LOG_MESSAGE;
 		msg_temp_cp.data = &temperature_copy;
-		msg_temp.request_type = NOT_REQUEST;
+		msg_temp_cp.request_type = NOT_REQUEST;
+		msg_temp_cp.log_level = LOG_INFO_DATA;
 		gettimeofday(&msg_temp_cp.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_temp_main)){
@@ -178,6 +182,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_CONTROL_REG_READ;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -193,6 +198,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_POWER_ON;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -208,6 +214,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_POWER_OFF;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -223,6 +230,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_ID_READ;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -238,6 +246,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_SET_INTEGRATION_TIME;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -253,6 +262,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_ENABLE;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -268,6 +278,7 @@ void *temp_thread_fn(void *threadid){
 				msg_rqst.data = &read_config;
 				msg_rqst.request_type = LIGHT_REQUEST;
 				msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_DISABLE;
+				msg_rqst.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 					printf("Temperature thread could not send data to light thread.\n");
@@ -289,6 +300,7 @@ void *temp_thread_fn(void *threadid){
 					//sprintf((char *)msg_rqst.data, "Configuration register read value: %x", config_read);
 					msg_rqst.data = &config_read;
 					msg_rqst.request_type = NOT_REQUEST;
+					msg_rqst.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -322,6 +334,7 @@ void *temp_thread_fn(void *threadid){
 					//sprintf((char *)msg_rqst.data, "Configuration register read value: %x", config_read);
 					msg_rqst.data = "In shutdown mode";
 					msg_rqst.request_type = NOT_REQUEST;
+					msg_rqst.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -354,6 +367,7 @@ void *temp_thread_fn(void *threadid){
 					//sprintf((char *)msg_rqst.data, "Configuration register read value: %x", config_read);
 					msg_rqst.data = "Out of shutdown";
 					msg_rqst.request_type = NOT_REQUEST;
+					msg_rqst.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -387,6 +401,7 @@ void *temp_thread_fn(void *threadid){
 					//sprintf((char *)msg_rqst.data, "Configuration register read value: %x", config_read);
 					msg_rqst.data = "Changing conversion rate to 4Hz";
 					msg_rqst.request_type = NOT_REQUEST;
+					msg_rqst.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -419,6 +434,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_CONTROL_REG_READ;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -433,6 +449,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_POWER_ON;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -447,6 +464,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_POWER_OFF;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -461,6 +479,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_SET_INTEGRATION_TIME;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -475,6 +494,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_ID_READ;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -489,6 +509,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_ENABLE;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -503,6 +524,7 @@ void *temp_thread_fn(void *threadid){
 					msg_rqst.data = &read_config;
 					msg_rqst.msg_rqst_type = LIGHT_INTERRUPT_DISABLE;
 					msg_rqst.request_type = LIGHT_REQUEST;
+					msg_rqst.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst, sizeof(msg_rqst), 1)){
 						printf("Temp thread could not send data to light thread.\n");
@@ -577,6 +599,7 @@ void *light_thread_fn(void *threadid){
 		msg_light.source_task = id;
 		msg_light.type = LOG_MESSAGE;
 		msg_light.data = &lux_value;
+		msg_light.log_level = LOG_INFO_DATA;
 		gettimeofday(&msg_light.t, NULL);
 		msg_light.request_type = NOT_REQUEST;
 
@@ -601,7 +624,8 @@ void *light_thread_fn(void *threadid){
 		msg_light_cp.type = LOG_MESSAGE;
 		msg_light_cp.data = &lux_value_copy;
 		gettimeofday(&msg_light_cp.t, NULL);
-		msg_light.request_type = NOT_REQUEST;
+		msg_light_cp.request_type = NOT_REQUEST;
+		msg_light_cp.log_level = LOG_INFO_DATA;
 
 		if(!pthread_mutex_lock(&mutex_light_main)){
 
@@ -625,6 +649,7 @@ void *light_thread_fn(void *threadid){
 				msg_rqst_light.data = &read_config;
 				msg_rqst_light.request_type = TEMP_REQUEST;
 				msg_rqst_light.msg_rqst_type = TEMP_CONFIG_READ;
+				msg_rqst_light.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst_light.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 					printf("Light thread could not send data to temperature thread.\n");
@@ -640,6 +665,7 @@ void *light_thread_fn(void *threadid){
 				msg_rqst_light.data = &read_config;
 				msg_rqst_light.request_type = TEMP_REQUEST;
 				msg_rqst_light.msg_rqst_type = TEMP_SHUTDOWN_ENABLE;
+				msg_rqst_light.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst_light.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 					printf("Light thread could not send data to temperature thread.\n");
@@ -655,6 +681,7 @@ void *light_thread_fn(void *threadid){
 				msg_rqst_light.data = &read_config;
 				msg_rqst_light.request_type = TEMP_REQUEST;
 				msg_rqst_light.msg_rqst_type = TEMP_SHUTDOWN_DISABLE;
+				msg_rqst_light.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst_light.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 					printf("Light thread could not send data to temperature thread.\n");
@@ -670,6 +697,7 @@ void *light_thread_fn(void *threadid){
 				msg_rqst_light.data = &read_config;
 				msg_rqst_light.request_type = TEMP_REQUEST;
 				msg_rqst_light.msg_rqst_type = TEMP_CHANGE_CONVERSION_RATE;
+				msg_rqst_light.log_level = LOG_REQUEST;
 				gettimeofday(&msg_rqst_light.t, NULL);
 				if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 					printf("Light thread could not send data to temperature thread.\n");
@@ -691,6 +719,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = &control_read;
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -724,6 +753,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = "Power off";
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -757,6 +787,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = "Power on";
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -790,6 +821,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = "Set integration time to 0x00";
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -823,6 +855,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = &id;
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -856,6 +889,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = "Set integration time to 0x00";
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -890,6 +924,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.type = LOG_MESSAGE;
 					msg_rqst_light.data = "Set integration time to 0x00";
 					msg_rqst_light.request_type = NOT_REQUEST;
+					msg_rqst_light.log_level = LOG_INFO_DATA;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temp thread.\n");
@@ -922,6 +957,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.data = &read_config;
 					msg_rqst_light.msg_rqst_type = TEMP_CONFIG_READ;
 					msg_rqst_light.request_type = TEMP_REQUEST;
+					msg_rqst_light.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temperature thread.\n");
@@ -937,6 +973,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.data = &read_config;
 					msg_rqst_light.msg_rqst_type = TEMP_SHUTDOWN_ENABLE;
 					msg_rqst_light.request_type = TEMP_REQUEST;
+					msg_rqst_light.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temperature thread.\n");
@@ -952,6 +989,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.data = &read_config;
 					msg_rqst_light.msg_rqst_type = TEMP_SHUTDOWN_DISABLE;
 					msg_rqst_light.request_type = TEMP_REQUEST;
+					msg_rqst_light.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temperature thread.\n");
@@ -967,6 +1005,7 @@ void *light_thread_fn(void *threadid){
 					msg_rqst_light.data = &read_config;
 					msg_rqst_light.msg_rqst_type = TEMP_CHANGE_CONVERSION_RATE;
 					msg_rqst_light.request_type = TEMP_REQUEST;
+					msg_rqst_light.log_level = LOG_REQUEST;
 					gettimeofday(&msg_rqst_light.t, NULL);
 					if(mq_send(mqd_req, (const char *)&msg_rqst_light, sizeof(msg_rqst_light), 1)){
 						printf("Light thread could not send data to temperature thread.\n");
@@ -993,6 +1032,7 @@ void *light_thread_fn(void *threadid){
 		msg_heartbeat_L.type = HEARTBEAT_MESSAGE;
 		msg_heartbeat_L.data = &lux_value_copy;
 		msg_heartbeat_L.request_type = NOT_REQUEST;
+		msg_heartbeat_L.log_level = LOG_HEARTBEAT;
 		gettimeofday(&msg_heartbeat_L.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_temp_main))
@@ -1026,22 +1066,22 @@ void *logger_thread_fn(void *threadid){
 		}	
 		else if(count_temp>0 && count_temp<11){
 			if(msg_t.type == (LOG_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Source: Temperature thread; Data: %f\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, *(float *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Source: Temperature thread; Data: %f\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], *(float *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_temp--;
 			}
 			else if(msg_t.type == (SYSTEM_INIT_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Source: Temperature thread; Data: %s\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, (char *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Source: Temperature thread; Data: %s\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], (char *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_temp--;
 			}			
 			else if(msg_t.type == (RESPONSE_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Response from light to temperature thread: %s\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, (char *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Response from light to temperature thread: %s\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], (char *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_temp--;
@@ -1055,22 +1095,22 @@ void *logger_thread_fn(void *threadid){
 		}	
 		else if(count_light>0 && count_light<11){
 			if(msg_t.type == (LOG_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %f\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, *(float *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Source: Light thread; Data: %f\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], *(float *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_light--;
 			}
 			else if(msg_t.type == (SYSTEM_INIT_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Source: Light thread; Data: %s\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, (char *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Source: Light thread; Data: %s\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], (char *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_light--;
 			}	
 			else if(msg_t.type == (RESPONSE_MESSAGE)){
-				sprintf(buf, "[%ld secs, %ld usecs] Response from temperature to light thread: %s\n", \
-				msg_t.t.tv_sec, msg_t.t.tv_usec, (char *)msg_t.data);
+				sprintf(buf, "[%ld secs, %ld usecs] [%s] Response from temperature to light thread: %s\n", \
+				msg_t.t.tv_sec, msg_t.t.tv_usec, log_levels[msg_t.log_level], (char *)msg_t.data);
 				fwrite(buf, sizeof(char), strlen(buf), fp);
 				memset(buf, 0, LOG_BUFFER_SIZE);
 				count_light--;
@@ -1173,6 +1213,7 @@ int main(){
 	msg3.source_task = main_thread;
 	msg3.type = SYSTEM_INIT_MESSAGE;
 	msg3.request_type = NOT_REQUEST;
+	msg3.log_level = LOG_MODULE_STARTUP;
 	gettimeofday(&msg3.t, NULL);
 
 	//spawn temperature thread
@@ -1200,6 +1241,7 @@ int main(){
  
  	msg3.request_type = NOT_REQUEST;
 	msg3.data = "Light thread spawned.";
+	msg3.log_level = LOG_MODULE_STARTUP;
 	gettimeofday(&msg3.t, NULL);
 
 	if(!pthread_mutex_lock(&mutex_log_light)){
@@ -1220,6 +1262,7 @@ int main(){
  
  	msg3.request_type = NOT_REQUEST;
  	msg3.data = "Logger thread spawned.";
+ 	msg3.log_level = LOG_MODULE_STARTUP;
 	gettimeofday(&msg3.t, NULL);
 
 	if(!pthread_mutex_lock(&mutex_log_temp)){

@@ -64,9 +64,11 @@ typedef enum message_type_t{
 /*Enumerating different logging levels*/
 typedef enum log_level_t{
     LOG_CRITICAL_FAILURE,
-    LOG_SYSTEM_FAILURE,
+    LOG_SENSOR_EXTREME_DATA,
     LOG_MODULE_STARTUP,
-    LOG_INFO_DATA
+    LOG_INFO_DATA,
+    LOG_REQUEST,
+    LOG_HEARTBEAT
 }log_l;
 
 
