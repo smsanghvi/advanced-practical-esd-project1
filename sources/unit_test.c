@@ -36,11 +36,27 @@
 #include "led.h"
 
 #define MSG_QUEUE_UNIT_TEST1 "/unit_test_queue1"
+
+#define DAY_THRESH				(120)
+#define NIGHT_THRESH			(5.0)
+#define TEMP_LOWER				(5.0)
+#define TEMP_UPPER				(50.0)
+
 int total_passes = 0;
 int total_fails = 0;
+int total_temp_passes = 0;
+int total_temp_fails = 0;
+int total_lux_passes = 0;
+int total_lux_fails = 0;
+
+float temperature = 0; 	//mock temperature data
+float lux;				//mock light intensity data
+uint16_t config_reg;
+
 
 //adding to full message queue
-int add_to_full_message_queue(void){
+int add_to_full_message_queue(void)
+{
 	static message msg_t;
 	struct mq_attr mq_attr_log;
 	static mqd_t mqd_temp;
@@ -87,7 +103,8 @@ int add_to_full_message_queue(void){
 
 
 //remove from empty queue
-int remove_from_empty_queue(void){
+int remove_from_empty_queue(void)
+{
 	static message msg_t;
 	struct mq_attr mq_attr_log;
 	static mqd_t mqd_temp;
@@ -128,6 +145,111 @@ int remove_from_empty_queue(void){
 
 }
 
+//temperature sensor task 
+int temp_warning_test(float temp)
+{
+	int flag = 0;
+	if(temp > TEMP_UPPER)
+	{
+		flag = 1;
+	}
+	if(temp < TEMP_LOWER)
+	{
+		flag = 2;
+	}
+	if((temp == TEMP_LOWER || temp == TEMP_UPPER) || (temp > TEMP_LOWER && temp < TEMP_UPPER))
+	{
+		flag = 3;
+	}
+	return flag;
+}
+
+//Generate mock temperature values
+void generate_temp(void)
+{
+	int flag;
+	float temperature = -40.0;		//-40 deg C: minimum temperature measureable.
+	while(temperature != 130.0)		//125 deg C: maximum temperature measureable. 
+	{
+		flag = temp_warning_test(temperature);
+		if(flag == 1)
+		{
+			printf("High temperature sensing - TEST SUCCESS: %f\n", temperature);
+			total_temp_passes++;
+		}
+		else if(flag == 2)
+		{
+			printf("Low temperature sensing - TEST SUCCESS: %f\n", temperature);
+			total_temp_passes++;
+		}
+		else if(flag == 3)
+		{
+			printf("Temperature is in SAFE range: %f\n", temperature);
+			total_temp_passes++;
+		}
+		else
+		{
+			printf("Temperature out of supported range: %f\n", temperature);
+			total_temp_fails++;
+		}
+
+		temperature = temperature + 5.0;
+	}
+}
+
+//light sensor task 
+int light_warning_test(float lux)
+{
+	int flag = 0;
+	if(lux > DAY_THRESH)
+	{
+		// printf("TOO BRIGHT!!!\n");
+		flag = 1;
+	}
+	if(lux < NIGHT_THRESH)
+	{
+		// printf("TOO DARK!!!\n");
+		flag = 2;
+	}
+	if((lux == DAY_THRESH || lux == NIGHT_THRESH) || (lux > NIGHT_THRESH && lux < DAY_THRESH))
+	{
+		flag = 3;
+	}
+	return flag;
+}
+
+//Generate mock lux values
+void generate_lux(void)
+{
+	int flag;
+	float lux = 0.0;		//0.0 lux: minimum light intensity measureable.
+	printf("Initial temperature is %f\n", temperature);
+	while(lux != 160.0)		//125 deg C: maximum temperature measureable. 
+	{
+		flag = light_warning_test(lux);
+		if(flag == 1)
+		{
+			printf("High light sensing - TEST SUCCESS: %f\n", lux);
+			total_lux_passes++;
+		}
+		else if(flag == 2)
+		{
+			printf("Low light sensing - TEST SUCCESS: %f\n", lux);
+			total_lux_passes++;
+		}
+		else if(flag == 3)
+		{
+			printf("Light intensity is in SAFE range: %f\n", lux);
+			total_lux_passes++;
+		}
+		else
+		{
+			printf("Light intensity out of supported range: %f\n", lux);
+			total_lux_fails++;
+		}
+		lux = lux + 0.5;
+	}
+}
 
 int main(){
 
@@ -146,11 +268,32 @@ int main(){
 	else
 		printf("Removed from empty message queue - TEST FAIL\n");
 
-	//Test3: 
+	//Test3: Generating temperature warnings
+	generate_temp();
+
+	//Test4: Generating light intensity warnings
+	generate_lux();
+
+	//Test5: Check temperature sensor conversion rate
+	config_reg = temp_sensor_config_regread();
+	if(config_reg == 0x6020)	//conversion rate set to 00 -> 0.25Hz
+		printf("Conversion rate of 0.25Hz: TEST PASS\n");
+	else
+		printf("Conversion rate of 0.25Hz: TEST FAIL\n");
+
+	//Test6: Check light sensor device ID
+	config_reg = light_sensor_id_regread();
+	if(config_reg == 0x50)	//conversion rate set to 00 -> 0.25Hz
+		printf("Light sensor device ID 0x50: TEST PASS\n");
+	else
+		printf("Light sensor device ID 0x50: TEST FAIL\n");
+
 
 	printf("---------------------------\n");
 	printf("Test summary -\n");
-	printf("PASSES: %d FAILS: %d\n", total_passes, total_fails);
+	printf("MESSAGE QUEUE PASSES: %d FAILS: %d\n", total_passes, total_fails);
+	printf("TEMP TEST PASSES: %d FAILS: %d\n", total_temp_passes, total_temp_fails);
+	printf("LIGHT TEST PASSES: %d FAILS: %d\n", total_lux_passes, total_lux_fails);
 	printf("---------------------------\n");
 
 }

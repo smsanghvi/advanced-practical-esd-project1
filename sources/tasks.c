@@ -36,10 +36,10 @@
 #include "messaging.h"
 
 #define LOG_BUFFER_SIZE 10000
-#define DAY				(120)
-#define NIGHT			(0)
-#define TEMP_LOWER		(5)
-#define TEMP_UPPER		(50)
+#define DAY				(120.0)
+#define NIGHT			(5.0)
+#define TEMP_LOWER		(5.0)
+#define TEMP_UPPER		(50.0)
 
 uint32_t read_config = 1;
 int retval;
@@ -54,7 +54,6 @@ pthread_mutex_t mutex_temp_main;
 pthread_mutex_t mutex_light_main;
 pthread_mutex_t mutex_rqst;
 
-//struct timeval tv;
 
 char buf[LOG_BUFFER_SIZE];
 struct sigaction sig;
@@ -102,6 +101,7 @@ void signal_handler(int signum)
 	}
 }
 
+//Inline Celcius to Kelvin/Fahrenheit conversion functions
 static inline float temperature_kelvin(float temperature_celcius)
 {
 	return 	(temperature_celcius + 273.15);
@@ -112,6 +112,8 @@ static inline float temperature_fahrenheit(float temperature_celcius)
 	return (temperature_celcius * 1.8 + 32);
 }
 
+
+//Start function of temperature thread
 void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
 	task_id id =  temp_thread;
@@ -581,15 +583,12 @@ void *temp_thread_fn(void *threadid){
 
 		}
 		pthread_mutex_unlock(&mutex_temp_main);
-		// loop_count++;	
 		usleep(1800);
 	}
-	// pthread_exit(&retval);
-	// pthread_cancel(temperature_thread);
 }
 
 
-
+//Start function of light thread
 void *light_thread_fn(void *threadid){
 	printf("In light thread function.\n");
 	task_id id =  lght_thread;
@@ -1063,7 +1062,7 @@ void *light_thread_fn(void *threadid){
 	}
 }
 
-
+//Start function of logger thread
 void *logger_thread_fn(void *threadid){
 	printf("In logger thread function.\n");
 	//task_id id;
@@ -1128,7 +1127,6 @@ void *logger_thread_fn(void *threadid){
 				count_light--;
 			}					
 		}
-		
 		usleep(1200);
 	}
 }
@@ -1364,8 +1362,8 @@ int main(int argc, char const *argv[]){
 				
 				//converting temperature data
 				celcius = *(float *)msg_te.data;
-				kelvin = temperature_kelvin(celcius);
-				fahrenheit = temperature_fahrenheit(celcius);
+				// kelvin = temperature_kelvin(celcius);
+				// fahrenheit = temperature_fahrenheit(celcius);
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}

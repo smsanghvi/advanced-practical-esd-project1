@@ -28,8 +28,8 @@
 #include <math.h>
 #include "light_sensor.h"
 
-#define NIGHT   (0.030400)
-#define DAY ()
+#define NIGHT   (0.0)
+#define DAY     (120.0)
 
 //Read light values. Convert to Lux values
 float light_sensor_read(void)
