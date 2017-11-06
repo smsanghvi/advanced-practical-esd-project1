@@ -2,7 +2,7 @@
 *   File: messaging.h
 *
 ​* ​ ​ The MIT License (MIT)
-*	Copyright (C) 2017 by Snehal Sanghvi and Rishi Soni
+*   Copyright (C) 2017 by Snehal Sanghvi and Rishi Soni
 *   Redistribution,​ ​ modification​ ​ or​ ​ use​ ​ of​ ​ this​ ​ software​ ​ in​ ​ source​ ​ or​ ​ binary
 ​* ​ ​ forms​ ​ is​ ​ permitted​ ​ as​ ​ long​ ​ as​ ​ the​ ​ files​ ​ maintain​ ​ this​ ​ copyright.​ ​ Users​ ​ are
 ​* ​ ​ permitted​ ​ to​ ​ modify​ ​ this​ ​ and​ ​ use​ ​ it​ ​ to​ ​ learn​ ​ about​ ​ the​ ​ field​ ​ of​ ​ embedded
@@ -51,7 +51,6 @@ typedef enum{
 
 /*enumerating the message type */
 typedef enum message_type_t{
-    HEARTBEAT_MESSAGE,
     SYSTEM_FAILURE_MESSAGE,
     LOG_MESSAGE,
     SYSTEM_INIT_MESSAGE,
@@ -68,7 +67,8 @@ typedef enum log_level_t{
     LOG_MODULE_STARTUP,
     LOG_INFO_DATA,
     LOG_REQUEST,
-    LOG_HEARTBEAT
+    LOG_HEARTBEAT, 
+    LOG_LIGHT_TRANSITION
 }log_l;
 
 
@@ -83,16 +83,16 @@ typedef enum request_type_t{
 
 /*Enumerating the type of request sent between light and temperature threads*/
 typedef enum type_rqst{
-	TEMP_CONFIG_READ,
-	TEMP_SHUTDOWN_ENABLE,
-	TEMP_SHUTDOWN_DISABLE,
-	TEMP_CHANGE_CONVERSION_RATE,
+    TEMP_CONFIG_READ,
+    TEMP_SHUTDOWN_ENABLE,
+    TEMP_SHUTDOWN_DISABLE,
+    TEMP_CHANGE_CONVERSION_RATE,
     LIGHT_POWER_ON,
-   	LIGHT_POWER_OFF,
+    LIGHT_POWER_OFF,
     LIGHT_CONTROL_REG_READ,
     LIGHT_SET_INTEGRATION_TIME,
     LIGHT_ID_READ,
-  	LIGHT_INTERRUPT_ENABLE,
+    LIGHT_INTERRUPT_ENABLE,
     LIGHT_INTERRUPT_DISABLE
 }type_of_request;
 
@@ -110,8 +110,8 @@ typedef struct message_t{
 
 /*Enumerating the errors for checksum*/
 typedef enum ERR_t {
-	CHKSUM_FAIL = 1,
-	CHKSUM_PASS = 2
+    CHKSUM_FAIL = 1,
+    CHKSUM_PASS = 2
 }ERR;
 
 

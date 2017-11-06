@@ -11,7 +11,7 @@
 *
 *
 *   Authors: Snehal Sanghvi and Rishi Soni
-*   Date Edited: 24 Oct 2017
+*   Date Edited: 5 Nov 2017
 *
 *   Description: Source file for tasks
 *
@@ -36,7 +36,7 @@
 #include "led.h"
 
 #define LOG_BUFFER_SIZE 10000
-#define DAY				(100)
+#define DAY				(120)
 #define NIGHT			(0)
 #define TEMP_LOWER		(5)
 #define TEMP_UPPER		(50)
@@ -73,13 +73,14 @@ static volatile int loop_count = 0;
 
 static volatile uint32_t temp_loop;
 static volatile uint32_t light_loop;
+char *filename_cmd;
 
 struct mq_attr mq_attr_log;
 static mqd_t mqd_temp, mqd_temp_cp, mqd_light, mqd_light_cp, mqd_req, mqd_temp_hb, mqd_light_hb;
 sem_t temp_sem, light_sem;
 
 const char* log_levels[] = {"LOG_CRITICAL_FAILURE", "LOG_SENSOR_EXTREME_DATA", \
- "LOG_MODULE_STARTUP", "LOG_INFO_DATA", "LOG_REQUEST", "LOG_HEARTBEAT" };
+ "LOG_MODULE_STARTUP", "LOG_INFO_DATA", "LOG_REQUEST", "LOG_HEARTBEAT", "LOG_LIGHT_TRANSITION"};
 
 void signal_handler(int signum)
 {
@@ -547,9 +548,11 @@ void *temp_thread_fn(void *threadid){
 			Heartbeat message to be sent to main
 		*/
 		msg_heartbeat.source_task = id;
-		msg_heartbeat.type = HEARTBEAT_MESSAGE;
+		msg_heartbeat.type = LOG_MESSAGE;
 		msg_heartbeat.data = &temperature_copy;
 		msg_heartbeat.request_type = NOT_REQUEST;
+		msg_heartbeat.log_level = LOG_HEARTBEAT;
+
 		gettimeofday(&msg_heartbeat.t, NULL);
 
 		if(!pthread_mutex_lock(&mutex_temp_main))
@@ -1029,7 +1032,7 @@ void *light_thread_fn(void *threadid){
 			Heartbeat message to be sent to main
 		*/
 		msg_heartbeat_L.source_task = id;
-		msg_heartbeat_L.type = HEARTBEAT_MESSAGE;
+		msg_heartbeat_L.type = LOG_MESSAGE;
 		msg_heartbeat_L.data = &lux_value_copy;
 		msg_heartbeat_L.request_type = NOT_REQUEST;
 		msg_heartbeat_L.log_level = LOG_HEARTBEAT;
@@ -1057,7 +1060,7 @@ void *logger_thread_fn(void *threadid){
 	//task_id id;
 	static message msg_t;
 
-	fp = fopen("log.txt", "a+");
+	fp = fopen(filename_cmd, "a+");
 
 	while(1){
 		//checking the temperature queue
@@ -1122,14 +1125,24 @@ void *logger_thread_fn(void *threadid){
 }
 
 
-int main(){
+int main(int argc, char const *argv[]){
 
 	pthread_attr_t attr;
 	static message msg3;
 	// uint32_t temp_heartbeat;
 	//uint8_t light_heartbeat;
 	struct timeval current_temp, current_light;
+	float prev_light_data = 0.0, current_light_data;
 	// clock_t temp_time;
+
+	//checking command line options
+	if(argc != 2){
+		printf ("USAGE: <filename.txt>\n");
+		exit(1);
+	}
+	else{	
+		filename_cmd = argv[1];
+	}
 
    if(pthread_mutex_init(&mutex_log_temp, NULL)){
       printf("Error in initializing log temp mutex.\n");  
@@ -1276,7 +1289,7 @@ int main(){
 	}
 	pthread_mutex_unlock(&mutex_log_temp);
 
-	static message msg_te, msg_hb;
+	static message msg_te, msg_hb, msg_le, msg_le_send;
 
 	gettimeofday(&current_temp, NULL);
 	gettimeofday(&current_light, NULL);
@@ -1295,12 +1308,15 @@ int main(){
 			{
 				// printf("Main thread could not receive data from temp thread.\n");
 			}
-			else if(current_temp.tv_usec < msg_hb.t.tv_usec + 3000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
+			else if(current_temp.tv_usec < msg_hb.t.tv_usec + 10000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
 			{
-				if(msg_hb.type == HEARTBEAT_MESSAGE)
+				if(msg_hb.log_level == LOG_HEARTBEAT)
 				{
 					// printf("Temp heartbeat: %d secs %d usecs\n", msg_hb.t.tv_sec, msg_hb.t.tv_usec);
 					// printf("Main task heartbeat: %d secs %d usecs\n", current_temp.tv_sec, current_temp.tv_usec);
+					// printf("Temp HB found\n");
+					if(mq_send(mqd_temp, (const char *)&msg_hb, sizeof(msg_hb), 1) < 0)
+						printf("Main thread could not send temp heartbeat to logger.\n");
 				}
 			}
 
@@ -1322,14 +1338,19 @@ int main(){
 				if(*(float *)msg_te.data > TEMP_UPPER - 10 && *(float *)msg_te.data < TEMP_UPPER + 10)
 				{
 					printf("TOO HOT!!!\n");
-					LEDOn();	//Warning LED ON
-					signal_handler(SIGINT);
+					LEDBlink();	//LED1 Blinking
+					msg_te.log_level = LOG_SENSOR_EXTREME_DATA;
+					if(mq_send(mqd_temp, (const char *)&msg_te, sizeof(msg_te), 1) < 0)
+						printf("Main thread could not send temp extreme data to logger.\n");
 				}
 				if(*(float *)msg_te.data > TEMP_LOWER - 10 && *(float *)msg_te.data < TEMP_LOWER + 10)
 				{
 					printf("TOO COLD!!!\n");
-					LEDOn();	//Warning LED ON
-					signal_handler(SIGINT);
+					LEDBlink();	//LED1 Blinking					
+					msg_te.log_level = LOG_SENSOR_EXTREME_DATA;
+					if(mq_send(mqd_temp, (const char *)&msg_te, sizeof(msg_te), 1) < 0)
+						printf("Main thread could not send temp extreme data to logger.\n");
+					// signal_handler(SIGINT);
 				}						
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
@@ -1343,15 +1364,22 @@ int main(){
 			{
 				// printf("Main thread could not receive data from temp thread.\n");
 			}
-			else if(current_light.tv_usec < msg_hb.t.tv_usec + 3000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
+			else if(current_light.tv_usec < msg_hb.t.tv_usec + 6000) //&& current_temp.tv_usec >= msg_hb.t.tv_usec)
 			{
-				if(msg_hb.type == HEARTBEAT_MESSAGE)
+				if(msg_hb.log_level == LOG_HEARTBEAT)
 				{
 					// printf("Light heartbeat: %d secs %d usecs\n", msg_hb.t.tv_sec, msg_hb.t.tv_usec);
 					// printf("Main task heartbeat: %d secs %d usecs\n", current_temp.tv_sec, current_temp.tv_usec);
-					// temp_heartbeat.tv_sec = current_temp.tv_sec;	
-					// temp_heartbeat.tv_usec = current_temp.tv_usec + 800000;
+					if(mq_send(mqd_light, (const char *)&msg_hb, sizeof(msg_hb), 1) < 0)
+						printf("Main thread could not send light heartbeat to logger.\n");
 				}
+				// else
+				// {
+				// 	printf("Light heartbeat not found\n");
+				// 	light_hb_err++;
+				// 	if(light_hb_err > 5)
+				// 		signal_handler(SIGINT);
+				// }
 			}
 			else
 			{
@@ -1362,34 +1390,85 @@ int main(){
 			}
 
 			//checking the light queue
-			if(mq_receive(mqd_light_cp, (char *)&msg_te, sizeof(msg_te), NULL) < 0)
+			if(mq_receive(mqd_light_cp, (char *)&msg_le, sizeof(msg_le), NULL) < 0)
 			{
 				// printf("Main thread could not receive data from light thread.\n");
 			}	
 			else
 			{
-				printf("Main thread: Light data is %f\n", *(float *)msg_te.data);
-				if(*(float *)msg_te.data > DAY - 10 && *(float *)msg_te.data < DAY + 10)
+				current_light_data = *(float *)msg_le.data;
+				if(current_light_data == 4841462298831705888555710545920.000000 || current_light_data == 264532997862441615360.000000)
 				{
-					printf("TOO BRIGHT!!!\n");
-					LEDOn();	//Warning LED ON
-					signal_handler(SIGINT);
+					//Discard these garbage values and assign current value to zero
+					current_light_data = 0;
 				}
-				if(*(float *)msg_te.data < NIGHT + 0.3 && *(float *)msg_te.data > NIGHT)
+				printf("Main thread: Light data is %f\n", current_light_data);
+
+				if(current_light_data  > prev_light_data + 15.0)
 				{
-					printf("TOO DARK!!!\n");
-					LEDOn();	//Warning LED ON
-					signal_handler(SIGINT);
+					// printf("Change from dark to light\n");
+					msg_le_send.log_level = LOG_LIGHT_TRANSITION;
+					msg_le_send.request_type = NOT_REQUEST;
+					msg_le_send.source_task = lght_thread;
+					msg_le_send.type = LOG_MESSAGE;
+					msg_le_send.data = &current_light_data;
+					gettimeofday(&msg_le_send.t, NULL);					
+					if(mq_send(mqd_light, (const char *)&msg_le_send, sizeof(msg_le_send), 1) < 0)
+						printf("Main thread could not send light transition data to logger.\n");
 				}
+
+				if(current_light_data + 15.0 < prev_light_data)
+				{
+					// printf("Change from light to dark\n");
+					msg_le_send.log_level = LOG_LIGHT_TRANSITION;
+					msg_le_send.request_type = NOT_REQUEST;
+					msg_le_send.source_task = lght_thread;
+					msg_le_send.type = LOG_MESSAGE;
+					msg_le_send.data = &current_light_data;
+					gettimeofday(&msg_le_send.t, NULL);					
+					if(mq_send(mqd_light, (const char *)&msg_le_send, sizeof(msg_le_send), 1) < 0)
+						printf("Main thread could not send light transition data to logger.\n");
+				}
+
+				if(current_light_data > DAY - 30.0 && current_light_data < DAY + 30.0)
+				{
+					// printf("TOO BRIGHT!!!\n");
+					LEDOn();	//LED1 ON
+					msg_le_send.log_level = LOG_SENSOR_EXTREME_DATA;
+					msg_le_send.request_type = NOT_REQUEST;
+					msg_le_send.source_task = lght_thread;
+					msg_le_send.type = LOG_MESSAGE;
+					msg_le_send.data = &current_light_data;
+					gettimeofday(&msg_le_send.t, NULL);					
+					if(mq_send(mqd_light, (const char *)&msg_le_send, sizeof(msg_le_send), 1) < 0)
+						printf("Main thread could not send light extreme data to logger.\n");
+					// signal_handler(SIGINT);
+				}
+				else
+					LEDOff(); //LED1 OFF
+
+				if(current_light_data < NIGHT + 0.2 && current_light_data > NIGHT)
+				{
+					// printf("TOO DARK!!!\n");
+					LEDOn();	//LED1 Blinking
+					msg_le_send.log_level = LOG_SENSOR_EXTREME_DATA;
+					msg_le_send.request_type = NOT_REQUEST;
+					msg_le_send.source_task = lght_thread;
+					msg_le_send.type = LOG_MESSAGE;
+					msg_le_send.data = &current_light_data;
+					gettimeofday(&msg_le_send.t, NULL);					
+					if(mq_send(mqd_light, (const char *)&msg_le_send, sizeof(msg_le_send), 1) < 0)
+						printf("Main thread could not send light extreme data to logger.\n");
+					// signal_handler(SIGINT);
+				}
+				else
+					LEDOff(); //LED1 OFF
+				// prev_light_data = current_light_data;
 			}
+
+			prev_light_data = current_light_data;
 			pthread_mutex_unlock(&mutex_light_main);
 		}
-
-		// if(loop_count >= 100)
-			// pthread_cancel(temperature_thread);
-			// pthread_exit(&retval);
-
-		loop_count++;
 		usleep(1000);
 	}
 	

@@ -22,6 +22,7 @@
 
 void LEDOn(void);
 void LEDOff(void);
+void LEDBlink(void);
 
 #endif
 
