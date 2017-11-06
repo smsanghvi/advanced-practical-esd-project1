@@ -1132,7 +1132,7 @@ int main(int argc, char const *argv[]){
 	// uint32_t temp_heartbeat;
 	//uint8_t light_heartbeat;
 	struct timeval current_temp, current_light;
-	float prev_light_data = 0.0, current_light_data;
+	float prev_light_data = 0.0, current_light_data, temperature_celcius, temperature_kelvin, temperature_fahrenheit;
 	// clock_t temp_time;
 
 	//checking command line options
@@ -1351,7 +1351,12 @@ int main(int argc, char const *argv[]){
 					if(mq_send(mqd_temp, (const char *)&msg_te, sizeof(msg_te), 1) < 0)
 						printf("Main thread could not send temp extreme data to logger.\n");
 					// signal_handler(SIGINT);
-				}						
+				}
+				
+				//converting temperature data
+				temperature_celcius = *(float *)msg_te.data;
+				temperature_kelvin = temperature_celcius + 273.15;
+				temperature_fahrenheit = temperature_celcius * 1.8 + 32;
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}
