@@ -24,7 +24,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/stat.h> 
-#include "messaging.h"
 #include <mqueue.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -34,6 +33,7 @@
 #include "temp_sensor.h"
 #include "light_sensor.h"
 #include "led.h"
+#include "messaging.h"
 
 #define LOG_BUFFER_SIZE 10000
 #define DAY				(120)
@@ -102,6 +102,15 @@ void signal_handler(int signum)
 	}
 }
 
+static inline float temperature_kelvin(float temperature_celcius)
+{
+	return 	(temperature_celcius + 273.15);
+}
+
+static inline float temperature_fahrenheit(float temperature_celcius)
+{
+	return (temperature_celcius * 1.8 + 32);
+}
 
 void *temp_thread_fn(void *threadid){
 	printf("In temperature thread function.\n");
@@ -1132,7 +1141,7 @@ int main(int argc, char const *argv[]){
 	// uint32_t temp_heartbeat;
 	//uint8_t light_heartbeat;
 	struct timeval current_temp, current_light;
-	float prev_light_data = 0.0, current_light_data, temperature_celcius, temperature_kelvin, temperature_fahrenheit;
+	float prev_light_data = 0.0, current_light_data, celcius, kelvin, fahrenheit;
 	// clock_t temp_time;
 
 	//checking command line options
@@ -1354,9 +1363,9 @@ int main(int argc, char const *argv[]){
 				}
 				
 				//converting temperature data
-				temperature_celcius = *(float *)msg_te.data;
-				temperature_kelvin = temperature_celcius + 273.15;
-				temperature_fahrenheit = temperature_celcius * 1.8 + 32;
+				celcius = *(float *)msg_te.data;
+				kelvin = temperature_kelvin(celcius);
+				fahrenheit = temperature_fahrenheit(celcius);
 			}
 			pthread_mutex_unlock(&mutex_temp_main);
 		}

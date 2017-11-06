@@ -146,6 +146,8 @@ int main(){
 	else
 		printf("Removed from empty message queue - TEST FAIL\n");
 
+	//Test3: 
+
 	printf("---------------------------\n");
 	printf("Test summary -\n");
 	printf("PASSES: %d FAILS: %d\n", total_passes, total_fails);
